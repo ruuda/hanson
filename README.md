@@ -14,7 +14,7 @@ Enter a development environment with [Nix][nix] [2.3][nix-2.3]:
 
 Run the app in development mode:
 
-    flask run
+    FLASK_ENV=development python -m flask run
 
 By default Flask will listen on `localhost:5000`.
 

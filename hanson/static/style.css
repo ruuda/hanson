@@ -1,0 +1,15 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-size: 18px;
+  font-family: 'IBM Plex Sans';
+}
+
+body {
+  max-width: 20em;
+  margin-left: auto;
+  margin-right: auto;
+}

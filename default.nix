@@ -20,6 +20,7 @@ in
     paths = [
       pkgs.black
       pkgs.mypy
+      pkgs.overmind
       pkgs.postgresql
       python
     ];

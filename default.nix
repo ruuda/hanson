@@ -9,17 +9,25 @@
 
 let
   pkgs = (import ./nixpkgs-pinned.nix) {};
-  python = pkgs.python3.withPackages (ps: [
+  runtimeDependencies = ps: [
     ps.flask
     ps.jinja2
     ps.psycopg2
-  ]);
+  ];
+  developmentDependencies = ps: [
+    # Mypy goes with the pythonPackages, we don't use the top-level pkgs.mypy,
+    # because that one is not able to find type hints of dependencies, and if
+    # we include it like this, then Mypy *can* typecheck Flask functions.
+    ps.mypy
+  ];
+  python = pkgs.python3.withPackages (ps:
+    (runtimeDependencies ps) ++ (developmentDependencies ps)
+  );
 in
   pkgs.buildEnv {
     name = "hanson-devenv";
     paths = [
       pkgs.black
-      pkgs.mypy
       pkgs.overmind
       pkgs.postgresql
       python

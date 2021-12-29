@@ -1,1 +1,1 @@
-server: FLASK_ENV=development python -m flask run
+web: FLASK_ENV=development python -m flask run --port $PORT

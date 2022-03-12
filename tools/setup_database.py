@@ -35,5 +35,11 @@ subprocess.run(
     REVOKE ALL PRIVILEGES ON SCHEMA public FROM PUBLIC;
     GRANT USAGE ON SCHEMA public TO hanson_app;
     GRANT USAGE, CREATE ON SCHEMA public TO hanson_setup;
+
+    ALTER DEFAULT PRIVILEGES
+    FOR USER hanson_app
+    GRANT SELECT, INSERT, UPDATE
+    ON TABLES
+    TO hanson_app;
     """,
 )

@@ -1,6 +1,6 @@
 -- migrate:up
 
-CREATE TABLE foo;
+CREATE TABLE foo ();
 
 -- migrate:down
 

@@ -29,7 +29,7 @@ in
     paths = [
       pkgs.black
       pkgs.overmind
-      pkgs.postgresql
+      pkgs.postgresql_14
       python
     ];
   }

@@ -12,6 +12,13 @@ Enter a development environment with [Nix][nix] [2.3][nix-2.3]:
 
     nix run -c $SHELL
 
+Run the initial database setup:
+
+    tools/run_postgres.py --force-init run/db_dev
+    # In a different terminal:
+    PGHOST="$PWD/run/dev_db/socket" tools/setup_database.py
+    # Now you can Ctrl+C the postgres instance in the other terminal.
+
 Run the app in development mode:
 
     overmind start

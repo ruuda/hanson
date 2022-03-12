@@ -10,6 +10,7 @@
 let
   pkgs = (import ./nixpkgs-pinned.nix) {};
   runtimeDependencies = ps: [
+    ps.click
     ps.flask
     ps.jinja2
     ps.psycopg2

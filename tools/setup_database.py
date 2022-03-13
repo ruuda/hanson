@@ -36,10 +36,16 @@ subprocess.run(
     GRANT USAGE ON SCHEMA public TO hanson_app;
     GRANT USAGE, CREATE ON SCHEMA public TO hanson_setup;
 
-    ALTER DEFAULT PRIVILEGES
-    FOR USER hanson_app
-    GRANT SELECT, INSERT, UPDATE
-    ON TABLES
+    -- The user "hanson_setup" will create new tables. When it creates them,
+    -- "hanson_app" should be given access. So we need to modify the default
+    -- privileges of "hanson_setup" to grant to "hanson_app".
+
+    ALTER DEFAULT PRIVILEGES FOR ROLE hanson_setup
+    GRANT SELECT, INSERT, UPDATE ON TABLES
+    TO hanson_app;
+
+    ALTER DEFAULT PRIVILEGES FOR ROLE hanson_setup
+    GRANT EXECUTE ON FUNCTIONS
     TO hanson_app;
     """,
 )

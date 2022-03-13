@@ -17,7 +17,7 @@ Run the initial database setup:
     tools/run_postgres.py --force-init run/db_dev
 
     # In a different terminal:
-    export PGHOST="$PWD/run/dev_db/socket"
+    export PGHOST="$PWD/run/db_dev/socket"
     tools/setup_database.py
     tools/migrate.py migrate latest
 

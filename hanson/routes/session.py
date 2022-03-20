@@ -1,32 +1,14 @@
-from __future__ import  annotations
+from datetime import datetime, timezone
 
-from flask import Flask, request, make_response, render_template
-from datetime import datetime
+from flask import Blueprint, render_template
 
-from hanson.database import connect_default
+from hanson import database as db
 from hanson.http import Response
 from hanson.models.session import Session
 from hanson.models.user import User
 
-app = Flask("hanson")
-dbconn = connect_default()
 
-
-@app.route("/")
-def route_get_index() -> Response:
-    with dbconn.begin() as tx:
-        session = Session.get_from_cookie(tx)
-        if session is None:
-            return Response.redirect_see_other("/login")
-
-        user = User.get_by_id(tx, session.user_id)
-        assert user is not None
-        return Response.ok_html(render_template("index.html", name=user.name))
-
-
-@app.route("/~<name>")
-def hello_world(name: str) -> Response:
-    return Response.ok_html(render_template("index.html", name=name))
+app = Blueprint(name='session', import_name=__name__)
 
 
 @app.get("/login")
@@ -36,13 +18,12 @@ def route_get_login() -> Response:
 
 @app.post("/login")
 def route_post_login() -> Response:
-    from hanson.models.user import User
-    from hanson.models.session import Session
+    from flask import request
 
     if "username" not in request.form:
         return Response.bad_request("Expected 'username' parameter.")
 
-    with dbconn.begin() as tx:
+    with db.get_context_connection().begin() as tx:
         # For development, we just log the user in by name without any authentication.
         # For production, at some point I should add OAuth support.
         user = User.get_by_name(tx, request.form["username"])
@@ -65,7 +46,6 @@ def route_get_logout() -> Response:
 
 @app.post("/logout")
 def route_post_logout() -> Response:
-    from datetime import timezone
     response = Response.redirect_see_other("/")
     # Clear and expire the session cookie.
     date_in_past = datetime(2000, 1, 1, 0, 0, 0, tzinfo=timezone.utc)

@@ -62,3 +62,17 @@ class ConnectionPool(NamedTuple):
 
 def connect_default() -> ConnectionPool:
     return ConnectionPool.new("dbname=hanson user=hanson_app password=hanson_app")
+
+
+def get_context_connection() -> ConnectionPool:
+    """
+    Return the global database connection associated with the Flask app.
+    """
+    from flask import _app_ctx_stack
+    ctx = _app_ctx_stack.top
+    assert ctx is not None, "Must be called from within a Flask context."
+
+    if not hasattr(ctx, "db_connection"):
+        ctx.db_connection = connect_default()
+
+    return ctx.db_connection

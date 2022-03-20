@@ -20,7 +20,7 @@ class User(NamedTuple):
     @staticmethod
     def create(tx: Transaction, username: str) -> User:
         """
-        Create a new user, return the id.
+        Create a new user.
         """
         assert User.is_valid_username(username)
         with tx.cursor() as cur:

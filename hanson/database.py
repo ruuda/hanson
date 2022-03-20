@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import psycopg2.pool  # type: ignore
 import psycopg2.extensions  # type: ignore
+import psycopg2.extras  # type: ignore
 import contextlib
 
 from typing import Iterator, NamedTuple
@@ -30,6 +31,9 @@ class ConnectionPool(NamedTuple):
 
     @staticmethod
     def new(connection_str: str) -> ConnectionPool:
+        # Enable UUID support for Psycopg2.
+        psycopg2.extras.register_uuid()
+
         pool = psycopg2.pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=10,

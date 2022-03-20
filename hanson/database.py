@@ -76,4 +76,5 @@ def get_context_connection() -> ConnectionPool:
     if not hasattr(ctx, "db_connection"):
         ctx.db_connection = connect_default()
 
-    return ctx.db_connection
+    conn: ConnectionPool = ctx.db_connection
+    return conn

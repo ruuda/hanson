@@ -16,7 +16,7 @@ def with_tx(f: F) -> F:
     and passes it to the "tx" argument.
     """
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         with db.get_context_connection().begin() as tx:
             result = f(*args, **kwargs, tx=tx)
 

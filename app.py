@@ -12,6 +12,9 @@ app.register_blueprint(market.app)
 app.register_blueprint(session.app)
 
 
-@app.errorhandler(NotLoggedInError)
+# Not sure why Mypy does not like this, maybe because I am mixing named
+# tuples with Flask's tuple, and usually that works, but maybe deep inside
+# Callable it creates problems?
+@app.errorhandler(NotLoggedInError)  # type: ignore
 def handle_not_logged_in(_: NotLoggedInError) -> Response:
     return Response.redirect_see_other("/login")

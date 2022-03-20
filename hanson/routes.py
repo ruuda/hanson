@@ -5,6 +5,8 @@ from typing import Dict, NamedTuple
 from datetime import datetime
 
 from hanson.database import connect_default
+from hanson.models.session import Session
+from hanson.models.user import User
 
 app = Flask("hanson")
 dbconn = connect_default()
@@ -68,13 +70,26 @@ class Response(NamedTuple):
 
 
 @app.route("/")
+def route_get_index() -> Response:
+    with dbconn.begin() as tx:
+        session = Session.get_from_cookie(tx)
+        if session is None:
+            return Response.redirect_see_other("/login")
+
+        user = User.get_by_id(tx, session.user_id)
+        assert user is not None
+        return Response.ok_html(render_template("index.html", name=user.name))
+
+
 @app.route("/~<name>")
-def hello_world(name: str = "visitor") -> Response:
+def hello_world(name: str) -> Response:
     return Response.ok_html(render_template("index.html", name=name))
+
 
 @app.get("/login")
 def route_get_login() -> Response:
     return Response.ok_html(render_template("login.html"))
+
 
 @app.post("/login")
 def route_post_login() -> Response:

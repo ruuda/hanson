@@ -3,12 +3,15 @@
 {% block title %}Log In — Hanson{% endblock %}
 
 {% block body %}
-<form method="post">
-  <label for="username">Username</label>
-  <input name="username" id="username" required>
-  <!-- For now there is no authentication.
-    -- Eventually, I would rather use a third-party identity provider.
-    -->
-  <input type="submit" value="Log In">
-</form>
+<div id="login-form">
+  <form method="post">
+    <h1>Hanson</h1>
+    <label for="username">Username</label>
+    <input name="username" id="username" required>
+    <!-- For now there is no authentication.
+      -- Eventually, I would rather use a third-party identity provider.
+      -->
+    <input type="submit" value="Log In">
+  </form>
+</div>
 {% endblock %}

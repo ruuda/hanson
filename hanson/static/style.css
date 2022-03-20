@@ -13,3 +13,19 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
+
+#login-form {
+  display: grid;
+  align-items: center;
+  height: 100vh;
+}
+
+#login-form form {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-row-gap: 0.5rem;
+}
+
+#login-form h1, #login-form input[type="submit"] {
+  grid-column: 2;
+}

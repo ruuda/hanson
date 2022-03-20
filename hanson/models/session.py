@@ -43,7 +43,7 @@ class Session(NamedTuple):
         with tx.cursor() as cur:
             cur.execute(
                 """
-                SELECT (id, user_id, created_at, expires_at)
+                SELECT id, user_id, created_at, expires_at
                 FROM "session"
                 WHERE token = %s AND expires_at > now();
                 """,
@@ -56,3 +56,22 @@ class Session(NamedTuple):
             assert created_at.tzinfo is not None
             assert valid_until.tzinfo is not None
             return Session(session_id, user_id, token, created_at, valid_until)
+
+    @staticmethod
+    def get_from_cookie(tx: Transaction) -> Optional[Session]:
+        """
+        If the "session" cookie is set (in Flask), and it contains a valid session token,
+        return that session.
+        """
+        from flask import request
+        token_str = request.cookies.get("session")
+
+        if token_str is None:
+            return None
+
+        try:
+            token = UUID(token_str)
+        except ValueError:
+            return None
+
+        return Session.get_by_token_not_expired(tx, token)

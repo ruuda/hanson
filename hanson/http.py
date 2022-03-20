@@ -24,6 +24,19 @@ class Response(NamedTuple):
         )
 
     @staticmethod
+    def redirect_see_other(location: str) -> Response:
+        """
+        Send a 303 See Other. Can be used from a POST, and the browser will do a GET.
+        """
+        return Response(
+            body="",
+            status_code=303,
+            headers={
+                "Location": location,
+            },
+        )
+
+    @staticmethod
     def bad_request(message: str) -> Response:
         return Response(
             body=message,
@@ -34,15 +47,12 @@ class Response(NamedTuple):
         )
 
     @staticmethod
-    def redirect_see_other(location: str) -> Response:
-        """
-        Send a 303 See Other. Can be used from a POST, and the browser will do a GET.
-        """
+    def internal_error(message: str) -> Response:
         return Response(
-            body="",
-            status_code=303,
+            body=message,
+            status_code=500,
             headers={
-                "Location": location,
+                "Content-Type": "text/plain; charset=utf-8",
             },
         )
 

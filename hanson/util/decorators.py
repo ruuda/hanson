@@ -18,7 +18,14 @@ def with_tx(f: F) -> F:
 
     def wrapper(*args, **kwargs):
         with db.get_context_connection().begin() as tx:
-            return f(*args, **kwargs, tx=tx)
+            result = f(*args, **kwargs, tx=tx)
+
+            # At the end of a request handler, roll back the transaction
+            # if it was not explicitly committed.
+            if tx.conn is not None:
+                tx.rollback()
+
+            return result
 
     # Give the wrapper the same name as the original function,
     # otherwise the Flask decorators break.

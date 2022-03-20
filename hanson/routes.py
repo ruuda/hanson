@@ -112,3 +112,20 @@ def route_post_login() -> Response:
     response = Response.redirect_see_other("/")
     response.add_set_cookie_header("session", str(session.token), session.expires_at)
     return response
+
+
+@app.get("/logout")
+def route_get_logout() -> Response:
+    # The template just shows a button to make the POST request.
+    return Response.ok_html(render_template("logout.html"))
+
+
+@app.post("/logout")
+def route_post_logout() -> Response:
+    from datetime import timezone
+    response = Response.redirect_see_other("/")
+    # Clear and expire the session cookie.
+    date_in_past = datetime(2000, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    response.add_set_cookie_header("session", "", date_in_past)
+    # TODO: We should also invalidate the session in the database.
+    return response

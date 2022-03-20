@@ -44,7 +44,7 @@ class ConnectionPool(NamedTuple):
     @contextlib.contextmanager
     def begin(self) -> Iterator[Transaction]:
         try:
-            # Use psycopg2 in "autocommit" mode, where it implicitly starts a
+            # Use psycopg2 in "no-autocommit" mode, where it implicitly starts a
             # transaction at the first statement, and we need to explicitly
             # commit() or rollback() afterwards.
             conn = self.pool.getconn()

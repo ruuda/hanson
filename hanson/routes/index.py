@@ -6,7 +6,7 @@ from hanson.models.session import Session
 from hanson.models.user import User
 
 
-app = Blueprint(name='index', import_name=__name__)
+app = Blueprint(name="index", import_name=__name__)
 
 
 @app.route("/")

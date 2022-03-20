@@ -1,12 +1,14 @@
-from __future__ import  annotations
+from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, NamedTuple
+
 
 class Response(NamedTuple):
     """
     A response type compatible with Flask's (body, status code, headers) tuple.
     """
+
     body: str
     status_code: int
     headers: Dict[str, str]
@@ -18,7 +20,7 @@ class Response(NamedTuple):
             status_code=200,
             headers={
                 "Content-Type": "text/html; charset=utf-8",
-            }
+            },
         )
 
     @staticmethod
@@ -28,7 +30,7 @@ class Response(NamedTuple):
             status_code=400,
             headers={
                 "Content-Type": "text/plain; charset=utf-8",
-            }
+            },
         )
 
     @staticmethod
@@ -41,16 +43,14 @@ class Response(NamedTuple):
             status_code=303,
             headers={
                 "Location": location,
-            }
+            },
         )
 
     def add_set_cookie_header(
-            self,
-            cookie_name: str,
-            cookie_value: str,
-            expires: datetime
+        self, cookie_name: str, cookie_value: str, expires: datetime
     ) -> None:
         from email.utils import format_datetime
+
         assert expires.tzinfo is not None
 
         self.headers["Set-Cookie"] = (

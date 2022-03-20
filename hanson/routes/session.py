@@ -8,7 +8,7 @@ from hanson.models.session import Session
 from hanson.models.user import User
 
 
-app = Blueprint(name='session', import_name=__name__)
+app = Blueprint(name="session", import_name=__name__)
 
 
 @app.get("/login")

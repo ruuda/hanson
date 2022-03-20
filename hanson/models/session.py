@@ -64,6 +64,7 @@ class Session(NamedTuple):
         return that session.
         """
         from flask import request
+
         token_str = request.cookies.get("session")
 
         if token_str is None:

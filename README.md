@@ -32,3 +32,7 @@ By default Flask will listen on `localhost:5000`.
 [prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
 [nix]:               https://nixos.org/
 [nix-2.3]:           https://releases.nixos.org/?prefix=nix/nix-2.3/
+
+## To do
+
+ * Add a vacuum daemon because autovacuum doesn’t run on insert-only tables.

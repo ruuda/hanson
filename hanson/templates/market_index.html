@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Markets — Hanson{% endblock %}
+
+{% block body %}
+<ul>
+{% for market in markets %}
+  <li><a href="/market/{{market.id}}">{{market.title}}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

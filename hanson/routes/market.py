@@ -14,7 +14,10 @@ app = Blueprint(name="market", import_name=__name__)
 @with_tx
 def route_get_markets(tx: Transaction) -> Response:
     _user = get_session_user(tx)
-    return Response.internal_error("TODO: Implement markets page.")
+    markets = Market.list_all(tx)
+    return Response.ok_html(
+        render_template("market_index.html", markets=markets)
+    )
 
 
 @app.get("/market/new")

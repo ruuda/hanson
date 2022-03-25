@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import NamedTuple, Optional, Tuple
+from typing import Iterable, NamedTuple, Optional, Tuple
 from datetime import datetime
-from uuid import UUID, uuid4
 
 from hanson.database import Transaction
 
@@ -74,3 +73,28 @@ class Market(NamedTuple):
             assert all(field is not None for field in result)
 
             return Market(*result)
+
+    @staticmethod
+    def list_all(tx: Transaction) -> Iterable[Market]:
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                  id,
+                  author_user_id,
+                  market_current_title(id),
+                  market_current_description(id),
+                  created_at
+                FROM
+                  "market"
+                """,
+            )
+            result: Optional[Tuple[int, int, str, str, datetime]] = cur.fetchone()
+
+            while result is not None:
+                # We promise the type system that no field is none, but the title
+                # and description are not enforced by the database to not be null:
+                # there could be no rows (which would be a bug).
+                assert all(field is not None for field in result)
+                yield Market(*result)
+                result = cur.fetchone()

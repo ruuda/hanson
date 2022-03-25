@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import psycopg2.pool  # type: ignore
+import contextlib
+import os
+from typing import Iterator, Optional, NamedTuple
+
 import psycopg2.extensions  # type: ignore
 import psycopg2.extras  # type: ignore
-import contextlib
-
-from typing import Iterator, NamedTuple
+import psycopg2.pool  # type: ignore
 
 
 class Transaction:
@@ -30,19 +31,30 @@ class ConnectionPool(NamedTuple):
     pool: psycopg2.pool.ThreadedConnectionPool
 
     @staticmethod
-    def new(connection_str: str) -> ConnectionPool:
+    def new(
+        database: str,
+        user: str,
+        password: str,
+        host: str,
+        port: Optional[int] = None,
+    ) -> ConnectionPool:
         # Enable UUID support for Psycopg2.
         psycopg2.extras.register_uuid()
 
         pool = psycopg2.pool.ThreadedConnectionPool(
             minconn=1,
             maxconn=10,
-            dsn=connection_str,
+            database=database,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
         )
         return ConnectionPool(pool)
 
     @contextlib.contextmanager
     def begin(self) -> Iterator[Transaction]:
+        conn: Optional[psycopg2.extensions.connection] = None
         try:
             # Use psycopg2 in "no-autocommit" mode, where it implicitly starts a
             # transaction at the first statement, and we need to explicitly
@@ -53,15 +65,22 @@ class ConnectionPool(NamedTuple):
             yield Transaction(conn)
 
         except:
-            self.pool.putconn(conn, close=True)
+            if conn is not None:
+                self.pool.putconn(conn, close=True)
             raise
 
         else:
+            assert conn is not None
             self.pool.putconn(conn, close=False)
 
 
 def connect_default() -> ConnectionPool:
-    return ConnectionPool.new("dbname=hanson user=hanson_app password=hanson_app")
+    return ConnectionPool.new(
+        database="hanson",
+        user="hanson_app",
+        password="hanson_app",
+        host=f"{os.getcwd()}/run/db_dev/socket",
+    )
 
 
 def get_context_connection() -> ConnectionPool:

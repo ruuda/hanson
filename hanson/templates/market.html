@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}{{market.title}} — Hanson{% endblock %}
+
+{% block body %}
+<h1>{{market.title}}</h1>
+<p>Created by {{author.name}} on {{market.created_at}}.</p>
+<p>{{market.description}}</p>
+{% endblock %}

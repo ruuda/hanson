@@ -24,6 +24,19 @@ class Response(NamedTuple):
         )
 
     @staticmethod
+    def redirect_moved_permanently(location: str) -> Response:
+        """
+        Send a 301 Moved Permanently.
+        """
+        return Response(
+            body="",
+            status_code=301,
+            headers={
+                "Location": location,
+            },
+        )
+
+    @staticmethod
     def redirect_see_other(location: str) -> Response:
         """
         Send a 303 See Other. Can be used from a POST, and the browser will do a GET.

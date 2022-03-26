@@ -71,7 +71,7 @@ html {
 body {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: 3.7em auto;
+  grid-template-rows: auto 1fr;
 }
 
 a {
@@ -106,7 +106,7 @@ h1 {
 
 #headerbar .inner {
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: auto 1fr auto;
   grid-template-areas: "main-nav _ session-indicator";
 }
 
@@ -141,6 +141,7 @@ a#home-link {
   text-align: right;
 }
 
+/* A little dropdown triangle for the session user menu. */
 .caret {
   display: inline-block;
   width: 0;
@@ -160,26 +161,17 @@ a#home-link {
   position: relative;
 }
 
-#session-indicator details {
-  position: relative;
-}
-
 #session-indicator details nav {
-  position: absolute;
-  top: calc(3.7em - 1px);
-  right: -0.7rem;
-  width: 6rem;
-  background-color: #fff;
-
-  border: 1px solid #eee;
-  border-top: none;
-  padding: 0.35rem;
+  text-align: left;
+  padding-bottom: 1rem;
+  padding-left: 1.2rem;
+  border-left: 0.2rem solid #eee;
 }
 
 #session-indicator details nav a {
+  padding-top: 0.5rem;
   display: block;
-  padding: 0.35rem;
-  text-align: left;
+  color: inherit;
 }
 
 #main {

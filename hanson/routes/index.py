@@ -23,6 +23,11 @@ def route_get_index(tx: Transaction) -> Response:
 
 
 @app.get("/~<name>")
+def route_user_home(name: str) -> Response:
+    return Response.redirect_moved_permanently(f"/user/{name}")
+
+
+@app.get("/user/<name>")
 @with_tx
 def hello_world(tx: Transaction, name: str) -> Response:
     session_user = get_session_user(tx)

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block headerbar %}
+<nav id="main-nav">
+  <a href="/" id="home-link">Hanson</a>
+  <a href="/markets">Markets</a>
+  <a href="/users">Users</a>
+</nav>
+<div id="session-indicator">
+  <p><span class="indicator">•</span> <span>{{session_user.name}}</span></p>
+</div>
+{% endblock %}

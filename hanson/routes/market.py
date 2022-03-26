@@ -13,31 +13,35 @@ app = Blueprint(name="market", import_name=__name__)
 @app.get("/markets")
 @with_tx
 def route_get_markets(tx: Transaction) -> Response:
-    _user = get_session_user(tx)
+    session_user = get_session_user(tx)
     markets = Market.list_all(tx)
     return Response.ok_html(
-        render_template("market_index.html", markets=markets)
+        render_template(
+            "market_index.html",
+            session_user=session_user,
+            markets=markets,
+        )
     )
 
 
 @app.get("/market/new")
 @with_tx
 def route_get_market_new(tx: Transaction) -> Response:
-    _user = get_session_user(tx)
+    _session_user = get_session_user(tx)
     return Response.internal_error("TODO: Implement new market page.")
 
 
 @app.post("/market/new")
 @with_tx
 def route_post_market_new(tx: Transaction) -> Response:
-    _user = get_session_user(tx)
+    _session_user = get_session_user(tx)
     return Response.internal_error("TODO: Implement post new market page.")
 
 
 @app.get("/market/<int:market_id>")
 @with_tx
 def route_get_market(tx: Transaction, market_id: int) -> Response:
-    _user = get_session_user(tx)
+    session_user = get_session_user(tx)
 
     market = Market.get_by_id(tx, market_id)
     if market is None:
@@ -49,6 +53,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     return Response.ok_html(
         render_template(
             "market.html",
+            session_user=session_user,
             market=market,
             author=author,
         )

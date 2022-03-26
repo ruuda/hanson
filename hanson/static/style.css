@@ -68,6 +68,12 @@ html {
   background-color: #fff;
 }
 
+body {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 3.7em auto;
+}
+
 a {
   text-decoration: none;
   color: #36d;
@@ -89,6 +95,7 @@ h1 {
   padding-left: 1.42rem;
   padding-right: 1.42rem;
   max-width: 50em;
+  height: 100%;
 }
 
 #headerbar {
@@ -111,6 +118,7 @@ h1 {
 #session-indicator {
   grid-area: session-indicator;
   margin-right: -0.70em;
+  text-align: right;
 }
 
 #main-nav a, #session-indicator p {
@@ -119,22 +127,18 @@ h1 {
   padding-bottom: 1em;
 }
 
-#main-nav a {
+#main-nav a, #session-indicator {
   color: inherit;
   padding-left: 0.70em;
   padding-right: 0.70em;
 }
 
 #main-nav a:hover {
-  background-color: #dcdedf;
+  background-color: #f0f1f2;
 }
 
 a#home-link {
   font-weight: 700;
-}
-
-#session-indicator p {
-  text-align: right;
 }
 
 #main {
@@ -144,7 +148,7 @@ a#home-link {
 #login-form {
   display: grid;
   align-items: center;
-  height: 100vh;
+  height: 100%;
 }
 
 #login-form form {

@@ -7,7 +7,16 @@
     <link href="/static/style.css" rel="stylesheet">
   </head>
   <body>
-    {% block body %}
-    {% endblock %}
+    <header id="headerbar">
+      <div class="inner">
+        {% block headerbar %}{% endblock %}
+      </div>
+    </header>
+    <section id="main">
+      <div class="inner">
+        {% block body %}
+        {% endblock %}
+      </div>
+    </section>
   </body>
 </html>

@@ -7,6 +7,7 @@ from hanson.http import Response
 from hanson.models.session import Session
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
+from hanson.util.session import get_session_user
 
 app = Blueprint(name="session", import_name=__name__)
 
@@ -39,9 +40,16 @@ def route_post_login(tx: Transaction) -> Response:
 
 
 @app.get("/logout")
-def route_get_logout() -> Response:
+@with_tx
+def route_get_logout(tx: Transaction) -> Response:
+    session_user = get_session_user(tx)
     # The template just shows a button to make the POST request.
-    return Response.ok_html(render_template("logout.html"))
+    return Response.ok_html(
+        render_template(
+            "logout.html",
+            session_user=session_user,
+        )
+    )
 
 
 @app.post("/logout")

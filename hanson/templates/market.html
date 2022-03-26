@@ -3,9 +3,9 @@
 {% block title %}{{market.title}} — Hanson{% endblock %}
 
 {% block body %}
-<div class="split">
-  <h1 class="split-left">{{market.title}}</h1>
-  <aside>
+<h1 class="main-left main-top">{{market.title}}</h1>
+<aside>
+  <div class="aside-content main-top">
     <table class="market-details">
       <tr>
         <th>Author</th>
@@ -23,28 +23,28 @@
       </tr>
       <tr>
         <th>Liquidity</th>
-        <td class="num">$ 3,140.00</td>
+        <td class="num">3,140.00</td>
       </tr>
       <tr>
         <th>Volume</th>
-        <td class="num">$ 13,370.00</td>
+        <td class="num">13,370.00</td>
       </tr>
       <tr style="color: #00aa00">
         <th class="outcome-label">Yes</th>
-        <td class="num" style="color: #00aa00">$0.66</td>
+        <td class="num" style="color: #00aa00">0.66</td>
       </tr>
       <tr style="color: #aa0000">
         <th class="outcome-label">No</th>
-        <td class="num" style="color: #aa0000">$0.33</td>
+        <td class="num" style="color: #aa0000">0.33</td>
       </tr>
     </table>
     <div class="distribution" style="grid-template-columns: 66fr 33fr">
       <div class="outcome" style="color: #00aa00; background-color: #00aa00"></div>
       <div class="outcome" style="color: #aa0000; background-color: #aa0000"></div>
     </div>
-  </aside>
-  <div class="split-left">
-    <p>{{market.description}}</p>
   </div>
+</aside>
+<div class="main-left">
+  <p>{{market.description}}</p>
 </div>
 {% endblock %}

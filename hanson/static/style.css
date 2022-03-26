@@ -96,31 +96,16 @@ p {
   margin-bottom: 1.7rem;
 }
 
-.inner {
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1.42rem;
-  padding-right: 1.42rem;
-  max-width: 50em;
-  height: 100%;
+input, label {
+  padding: 0.2em;
+  font-family: inherit;
+  color: inherit;
 }
 
-.split {
+.columns {
   display: grid;
-  grid-template-columns: 3fr auto;
-  grid-column-gap: 3rem;
-}
-
-.split .split-left {
-  grid-column: 1 / 2;
-}
-
-.split aside {
-  grid-column: 2 / 3;
-  /* It would be nice to use, 1/-1 to span all rows,
-     but that doesn’t work when the number of rows is not known statically.
-     So instead just span a large number of rows. */
-  grid-row: 1 / 100;
+  grid-template-columns: auto 16rem 18rem 16rem auto;
+  grid-template-areas: "margin-left left mid right margin-right";
 }
 
 .num {
@@ -128,20 +113,14 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
-#headerbar {
-  background-color: #fafafa;
+#header {
+  background-color: #fff;
   border-bottom: 1px solid #eee;
   color: #78a;
 }
 
-#headerbar .inner {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas: "main-nav _ session-indicator";
-}
-
 #main-nav {
-  grid-area: main-nav;
+  grid-column: 2 / 4;
   margin-left: -0.70em;
 }
 
@@ -166,7 +145,8 @@ a#home-link {
 }
 
 #session-indicator {
-  grid-area: session-indicator;
+  grid-area: right;
+  padding-left: 0;
   margin-right: -0.70em;
   text-align: right;
 }
@@ -196,6 +176,7 @@ a#home-link {
   padding-bottom: 1rem;
   padding-left: 1.2rem;
   border-left: 0.2rem solid #eee;
+  margin-left: calc(-0.2rem + 1px); /* Right-align the borders. */
 }
 
 #session-indicator details nav a {
@@ -204,24 +185,60 @@ a#home-link {
   color: inherit;
 }
 
-#main {
-  margin-top: 4rem;
-}
-
 #login-form {
+  grid-row: 2;
+  grid-column: 2 / 5;
   display: grid;
   align-items: center;
   height: 100%;
+  max-width: 25rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #login-form form {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: auto 1fr;
+  grid-column-gap: 1rem;
   grid-row-gap: 0.5rem;
+  background-color: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 0.2rem;
+  padding: 2rem;
 }
 
 #login-form h1, #login-form input[type="submit"] {
   grid-column: 2;
+}
+
+#main {
+  grid-template-rows: auto 1fr;
+}
+
+#main .main-top {
+  margin-top: 4rem;
+}
+
+#main .main-left {
+  grid-column: 2 / 4;
+  padding-right: 4rem;
+}
+
+#main aside {
+  grid-column: 4 / 6;
+  grid-row: 1 / 10;
+  border-left: 1px solid #eee;
+  background-color: #fafafa;
+  padding-left: 2rem;
+}
+
+#main .aside-content {
+  width: 14rem;
+  color: #78a;
+}
+
+table.market-details {
+  width: 100%;
 }
 
 table.market-details th {

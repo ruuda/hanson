@@ -98,6 +98,24 @@ h1 {
   height: 100%;
 }
 
+.split {
+  display: grid;
+  grid-template-columns: 3fr auto;
+  grid-column-gap: 1.42rem;
+}
+
+.split .split-left {
+  grid-column: 1 / 2;
+}
+
+.split aside {
+  grid-column: 2 / 3;
+  /* If I understand correctly, 1/-1 should span all rows,
+     but in practice that’s not what happens in Chromium 99,
+     so instead just span a large number of rows. */
+  grid-row: 1 / 100;
+}
+
 #headerbar {
   background-color: #fafafa;
   border-bottom: 1px solid #eee;

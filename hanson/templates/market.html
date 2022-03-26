@@ -3,7 +3,40 @@
 {% block title %}{{market.title}} — Hanson{% endblock %}
 
 {% block body %}
-<h1>{{market.title}}</h1>
-<p>Created by {{author.name}} on {{market.created_at}}.</p>
-<p>{{market.description}}</p>
+<div class="split">
+  <h1 class="split-left">{{market.title}}</h1>
+  <aside>
+    <table>
+      <tr>
+        <td>Author</td>
+        <td>{{author.name}}</td>
+      </tr>
+      <tr>
+        <td>Created</td>
+        <td>
+          <span title="{{
+            market.created_at.isoformat(sep=' ', timespec='seconds')
+          }}">{{
+            market.created_at.strftime("%Y-%m-%d")
+          }}</span>
+        </td>
+      </tr>
+      <tr>
+        <td>Liquidity</td>
+        <td>$ 3,140.00</td>
+      </tr>
+      <tr>
+        <td>Volume</td>
+        <td>$ 13,370.00</td>
+      </tr>
+      <tr>
+        <td>Distribution</td>
+        <td>$ 10,000.00</td>
+      </tr>
+    </table>
+  </aside>
+  <div class="split-left">
+    <p>{{market.description}}</p>
+  </div>
+</div>
 {% endblock %}

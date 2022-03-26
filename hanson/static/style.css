@@ -66,17 +66,13 @@ html {
   font-feature-settings: 'cv01' 1, 'cv08' 1, 'calt' 0;
   line-height: 1.7em;
   background-color: #fff;
+  color: #333;
 }
 
 body {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr;
-}
-
-a {
-  text-decoration: none;
-  color: #36d;
 }
 
 h1, h2, h3 {
@@ -87,6 +83,17 @@ h1, h2, h3 {
 h1 {
   font-size: 2rem;
   line-height: 2.42rem;
+  margin-top: -0.35rem;
+  margin-bottom: 1.75rem;
+}
+
+a {
+  text-decoration: none;
+  color: #36d;
+}
+
+p {
+  margin-bottom: 1.7rem;
 }
 
 .inner {
@@ -101,7 +108,7 @@ h1 {
 .split {
   display: grid;
   grid-template-columns: 3fr auto;
-  grid-column-gap: 1.42rem;
+  grid-column-gap: 3rem;
 }
 
 .split .split-left {
@@ -110,10 +117,15 @@ h1 {
 
 .split aside {
   grid-column: 2 / 3;
-  /* If I understand correctly, 1/-1 should span all rows,
-     but in practice that’s not what happens in Chromium 99,
-     so instead just span a large number of rows. */
+  /* It would be nice to use, 1/-1 to span all rows,
+     but that doesn’t work when the number of rows is not known statically.
+     So instead just span a large number of rows. */
   grid-row: 1 / 100;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 #headerbar {
@@ -193,7 +205,7 @@ a#home-link {
 }
 
 #main {
-  margin-top: 3rem;
+  margin-top: 4rem;
 }
 
 #login-form {
@@ -210,4 +222,26 @@ a#home-link {
 
 #login-form h1, #login-form input[type="submit"] {
   grid-column: 2;
+}
+
+table.market-details th {
+  text-align: left;
+  font-weight: 500;
+  padding-right: 1.42rem;
+}
+
+table.market-details td {
+  text-align: right;
+}
+
+.distribution {
+  margin-top: 0.2rem;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.25rem;
+}
+
+.outcome {
+  height: 0.5rem;
 }

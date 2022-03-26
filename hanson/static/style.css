@@ -115,13 +115,7 @@ h1 {
   margin-left: -0.70em;
 }
 
-#session-indicator {
-  grid-area: session-indicator;
-  margin-right: -0.70em;
-  text-align: right;
-}
-
-#main-nav a, #session-indicator p {
+#main-nav a, #session-indicator summary {
   display: inline-block;
   padding-top: 1em;
   padding-bottom: 1em;
@@ -139,6 +133,53 @@ h1 {
 
 a#home-link {
   font-weight: 700;
+}
+
+#session-indicator {
+  grid-area: session-indicator;
+  margin-right: -0.70em;
+  text-align: right;
+}
+
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border: 0.35rem solid #78a;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  top: 0.25rem;
+  position: relative;
+  margin-left: 0.2rem;
+}
+
+#session-indicator details summary {
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+}
+
+#session-indicator details {
+  position: relative;
+}
+
+#session-indicator details nav {
+  position: absolute;
+  top: calc(3.7em - 1px);
+  right: -0.7rem;
+  width: 6rem;
+  background-color: #fff;
+
+  border: 1px solid #eee;
+  border-top: none;
+  padding: 0.35rem;
+}
+
+#session-indicator details nav a {
+  display: block;
+  padding: 0.35rem;
+  text-align: left;
 }
 
 #main {

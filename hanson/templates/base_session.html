@@ -7,6 +7,15 @@
   <a href="/users">Users</a>
 </nav>
 <div id="session-indicator">
-  <p><span class="indicator">•</span> <span>{{session_user.name}}</span></p>
+  <details>
+    <summary>
+      <span>{{session_user.name}}</span>
+      <span class="caret"></span>
+    </summary>
+    <nav>
+      <a href="#TODO">Profile</a>
+      <a href="/logout">Log Out</a>
+    </nav>
+  </details>
 </div>
 {% endblock %}

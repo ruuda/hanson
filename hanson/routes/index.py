@@ -16,22 +16,22 @@ def route_get_index(tx: Transaction) -> Response:
     return Response.ok_html(
         render_template(
             "index.html",
-            name=session_user.name,
+            name=session_user.username,
             session_user=session_user,
         )
     )
 
 
-@app.get("/~<name>")
-def route_user_home(name: str) -> Response:
-    return Response.redirect_moved_permanently(f"/user/{name}")
+@app.get("/~<username>")
+def route_user_home(username: str) -> Response:
+    return Response.redirect_moved_permanently(f"/user/{username}")
 
 
-@app.get("/user/<name>")
+@app.get("/user/<username>")
 @with_tx
-def hello_world(tx: Transaction, name: str) -> Response:
+def hello_world(tx: Transaction, username: str) -> Response:
     session_user = get_session_user(tx)
-    profile_user = User.get_by_name(tx, name)
+    profile_user = User.get_by_username(tx, username)
 
     if profile_user is None:
         return Response.not_found("No such user.")
@@ -39,7 +39,7 @@ def hello_world(tx: Transaction, name: str) -> Response:
     return Response.ok_html(
         render_template(
             "index.html",
-            name=name,
+            name=username,
             session_user=session_user,
         )
     )

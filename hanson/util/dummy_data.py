@@ -10,8 +10,8 @@ from textwrap import dedent
 
 
 def add_users(tx: Transaction) -> List[User]:
-    henk = User.create(tx, "henk")
-    piet = User.create(tx, "piet")
+    henk = User.create(tx, "henk", "Henk de Steen")
+    piet = User.create(tx, "piet", "Piet de Kei")
     return [henk, piet]
 
 
@@ -24,20 +24,20 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         Market.create(
             tx,
             author_user_id=user.id,
-            title=f"Will {user.name.title()} frobnicate the widget this year?",
+            title=f"Will {user.username.title()} frobnicate the widget this year?",
             description=dedent(
                 f"""
-                In past years, {user.name.title()} has shown a tendency to
+                In past years, {user.username.title()} has shown a tendency to
                 frobnicate widgets, although in some years, no widget was
-                frobnicated. Will {user.name.title()} frobnicate at least one
+                frobnicated. Will {user.username.title()} frobnicate at least one
                 widget this year?
 
                 ## Resolution criteria
 
-                Resolves to _yes_ when {user.name.title()} frobnicates at least
-                one widget this year, or to _no_ otherwise.
+                Resolves to _yes_ when {user.username.title()} frobnicates at
+                least one widget this year, or to _no_ otherwise.
                 """,
-            )
+            ),
         )
         for user in users
     ]

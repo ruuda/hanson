@@ -27,7 +27,7 @@ def route_post_login(tx: Transaction) -> Response:
 
     # For development, we just log the user in by name without any authentication.
     # For production, at some point I should add OAuth support.
-    user = User.get_by_name(tx, request.form["username"])
+    user = User.get_by_username(tx, request.form["username"])
     if user is None:
         return Response.bad_request("No such user.")
 

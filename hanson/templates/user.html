@@ -1,0 +1,35 @@
+{% extends "base_session.html" %}
+
+{% block title %}{{profile_user.full_name}} — Hanson{% endblock %}
+
+{% block body %}
+<h1 class="main-left main-top">{{profile_user.full_name}}</h1>
+<aside>
+  <div class="aside-content main-top">
+    <table class="properties">
+      <tr>
+        <th>Username</th>
+        <td>{{profile_user.username}}</td>
+      </tr>
+      <tr>
+        <th>Joined</th>
+        <td class="num">
+          <span title="{{
+            profile_user.created_at.isoformat(sep=' ', timespec='seconds')
+          }}">{{
+            profile_user.created_at.strftime("%Y-%m-%d")
+          }}</span>
+        </td>
+      </tr>
+      <tr>
+        <th>Net worth</th>
+        <td class="num">3,140.00</td>
+      </tr>
+    </table>
+  </div>
+</aside>
+<div class="main-left">
+  <p>Here we will later add an overview of the markets created,
+    and possibly the market that the user has a position in.</p>
+</div>
+{% endblock %}

@@ -237,17 +237,17 @@ a#home-link {
   color: #78a;
 }
 
-table.market-details {
+table.properties {
   width: 100%;
 }
 
-table.market-details th {
+table.properties th {
   text-align: left;
   font-weight: 500;
   padding-right: 1.42rem;
 }
 
-table.market-details td {
+table.properties td {
   text-align: right;
 }
 

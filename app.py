@@ -1,15 +1,17 @@
 from flask import Flask
 
 from hanson.http import Response
-from hanson.routes import index
-from hanson.routes import market
-from hanson.routes import session
+from hanson.routes import index as route_index
+from hanson.routes import market as route_market
+from hanson.routes import session as route_session
+from hanson.routes import user as route_user
 from hanson.util.session import NotLoggedInError
 
 app = Flask(import_name="hanson")
-app.register_blueprint(index.app)
-app.register_blueprint(market.app)
-app.register_blueprint(session.app)
+app.register_blueprint(route_index.app)
+app.register_blueprint(route_market.app)
+app.register_blueprint(route_session.app)
+app.register_blueprint(route_user.app)
 
 
 # Not sure why Mypy does not like this, maybe because I am mixing named

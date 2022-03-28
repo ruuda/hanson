@@ -1,0 +1,11 @@
+{% extends "base_session.html" %}
+
+{% block title %}Users — Hanson{% endblock %}
+
+{% block body %}
+<ul class="main-left main-top">
+{% for user in users %}
+  <li><a href="/user/{{user.username}}">{{user.full_name}}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

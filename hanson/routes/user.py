@@ -2,7 +2,6 @@ from flask import Blueprint, render_template
 
 from hanson.database import Transaction
 from hanson.http import Response
-from hanson.models.market import Market
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
@@ -13,8 +12,15 @@ app = Blueprint(name="user", import_name=__name__)
 @app.get("/users")
 @with_tx
 def route_get_users(tx: Transaction) -> Response:
-    _session_user = get_session_user(tx)
-    return Response.internal_error("TODO: Implement this.")
+    session_user = get_session_user(tx)
+    users = User.list_all(tx)
+    return Response.ok_html(
+        render_template(
+            "user_index.html",
+            session_user=session_user,
+            users=users,
+        )
+    )
 
 
 @app.get("/~<username>")

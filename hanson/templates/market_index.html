@@ -3,7 +3,7 @@
 {% block title %}Markets — Hanson{% endblock %}
 
 {% block body %}
-<ul>
+<ul class="main-left main-top">
 {% for market in markets %}
   <li><a href="/market/{{market.id}}">{{market.title}}</a></li>
 {% endfor %}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from typing import NamedTuple, Optional, Tuple
+from typing import Iterable, NamedTuple, Optional, Tuple
 from datetime import datetime
 
 from hanson.database import Transaction
@@ -117,3 +117,27 @@ class User(NamedTuple):
                 # guaranteed by the database.
                 assert all(field is not None for field in result)
                 return User(*result)
+
+    @staticmethod
+    def list_all(tx: Transaction) -> Iterable[User]:
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                  id,
+                  user_current_username(id),
+                  user_current_full_name(id),
+                  created_at
+                FROM
+                  "user"
+                ORDER BY
+                  -- TODO: Order by net worth, once we have that.
+                  created_at ASC;
+                """,
+            )
+            result: Optional[Tuple[int, str, str, datetime]] = cur.fetchone()
+
+            while result is not None:
+                assert all(field is not None for field in result)
+                yield User(*result)
+                result = cur.fetchone()

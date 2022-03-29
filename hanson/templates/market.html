@@ -29,18 +29,19 @@
         <th>Volume</th>
         <td class="num">13,370.00</td>
       </tr>
-      <tr style="color: #00aa00">
-        <th class="outcome-label">Yes</th>
-        <td class="num" style="color: #00aa00">0.66</td>
+      {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
+      <tr style="color: {{outcome.color}}">
+        <th class="outcome-label">{{outcome.name}}</th>
+        <td class="num" style="color: {{outcome.color}}">{{"{:.2f}".format(p)}}</td>
       </tr>
-      <tr style="color: #aa0000">
-        <th class="outcome-label">No</th>
-        <td class="num" style="color: #aa0000">0.33</td>
-      </tr>
+      {% endfor %}
     </table>
-    <div class="distribution" style="grid-template-columns: 66fr 33fr">
-      <div class="outcome" style="color: #00aa00; background-color: #00aa00"></div>
-      <div class="outcome" style="color: #aa0000; background-color: #aa0000"></div>
+    <div class="distribution" style="grid-template-columns: {%
+      for p in probabilities
+    %}{{p * 100}}fr {% endfor %}">
+      {% for outcome in outcomes.outcomes %}
+      <div class="outcome" style="background-color: {{outcome.color}}"></div>
+      {% endfor %}
     </div>
   </div>
 </aside>

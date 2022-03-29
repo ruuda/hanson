@@ -3,6 +3,7 @@ from flask import Blueprint, render_template
 from hanson.database import Transaction
 from hanson.http import Response
 from hanson.models.market import Market
+from hanson.models.outcome import Outcome
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
@@ -50,11 +51,21 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     author = User.get_by_id(tx, market.author_user_id)
     assert author is not None
 
+    outcomes = Outcome.get_all_by_market(tx, market_id)
+
+    # TODO: Add real probabilities.
+    ps = [1 / n for n in range(1, 100)][: len(outcomes.outcomes)]
+    total = sum(ps)
+    ps = [p / total for p in ps]
+
     return Response.ok_html(
         render_template(
             "market.html",
             session_user=session_user,
             market=market,
             author=author,
+            outcomes=outcomes,
+            probabilities=ps,
+            zip=zip,
         )
     )

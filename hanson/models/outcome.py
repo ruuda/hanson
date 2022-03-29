@@ -102,16 +102,16 @@ class Outcome:
                 row: Optional[
                     Tuple[int, str, str, Optional[float], Optional[datetime]]
                 ] = cur.fetchone()
-                if row is not None:
-                    id, name, color, value_float, value_datetime = row
-                    if value_float is not None:
-                        yield OutcomeFloat(id, market_id, name, color, value_float)
-                    elif value_datetime is not None:
-                        yield OutcomeDatetime(
-                            id, market_id, name, color, value_datetime
-                        )
-                    else:
-                        yield OutcomeDiscrete(id, market_id, name, color)
+                if row is None:
+                    break
+
+                id, name, color, value_float, value_datetime = row
+                if value_float is not None:
+                    yield OutcomeFloat(id, market_id, name, color, value_float)
+                elif value_datetime is not None:
+                    yield OutcomeDatetime(id, market_id, name, color, value_datetime)
+                else:
+                    yield OutcomeDiscrete(id, market_id, name, color)
 
     @staticmethod
     def get_all_by_market(tx: Transaction, market_id: int) -> Outcomes:

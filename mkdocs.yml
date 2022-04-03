@@ -6,7 +6,9 @@ theme:
   name: null
   custom_dir: docs/theme
 nav:
-  - Overview: index.md
-  - Concepts:
+  - Overview:
+    - index: index.md
+  - User guide:
     - Assets: assets.md
     - Accounts: accounts.md
+    - Transactions: transactions.md

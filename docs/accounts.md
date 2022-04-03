@@ -10,7 +10,7 @@ Points can live in two places:
    market resolves.
  * **In user’s accounts**. We call this the user’s _balance_ in points.
 
-Outcome shares can live in two similar places:
+Outcome shares can similarly live in two places:
 
  * **A market’s market maker pool**. Every market comes with an automated market
    maker (<abbr>AMM</abbr> for short). Users can only trade with the market

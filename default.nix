@@ -31,6 +31,7 @@ in
       pkgs.black
       pkgs.overmind
       pkgs.postgresql_14
+      pkgs.mkdocs
       python
     ];
   }

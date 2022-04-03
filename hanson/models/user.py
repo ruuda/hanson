@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
-
-from typing import Iterable, NamedTuple, Optional, Tuple
 from datetime import datetime
+from decimal import Decimal
+from typing import Iterable, NamedTuple, Optional, Tuple
 
 from hanson.database import Transaction
+from hanson.models import account
+from hanson.models.currency import Points
 
 
 class User(NamedTuple):
@@ -141,3 +143,6 @@ class User(NamedTuple):
                 assert all(field is not None for field in result)
                 yield User(*result)
                 result = cur.fetchone()
+
+    def get_points_balance(self, tx: Transaction) -> Points:
+        return account.get_user_points_balance(tx, self.id) or Points(Decimal('0.00'))

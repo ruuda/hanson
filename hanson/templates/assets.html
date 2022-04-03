@@ -1,0 +1,21 @@
+{% extends "base_session.html" %}
+
+{% block title %}Assets — Hanson{% endblock %}
+
+{% block body %}
+<div class="main-full main-top">
+  <h1>Assets</h1>
+  <h2 class="main-left">Points</h2>
+  <p>999.99 pt</p>
+  {% for market, assets in markets_assets %}
+    <h2><a href="/market/{{market.id}}">{{market.title}}</a></h2>
+    <table>
+      {% for asset in assets %}
+      <tr><td class="num">{{asset.balance}}</td><td>{{asset.outcome.name}}</td></tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>You don’t have any outcome shares. Go predict in some markets!</p>
+  {% endfor %}
+</div>
+{% endblock %}

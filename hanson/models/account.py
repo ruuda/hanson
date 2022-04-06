@@ -64,6 +64,8 @@ class UserAccount(NamedTuple):
                 else:
                     raise Exception("Invalid account type.")
 
+                result = cur.fetchone()
+
     # TODO: Add a test, then test that when called twice, it returns the same id.
     @staticmethod
     def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount:

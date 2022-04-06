@@ -121,7 +121,12 @@ def main() -> None:
     conn = connect_default()
     with conn.begin() as tx:
         users = add_users(tx)
-        add_income(tx, users, Points(Decimal("10.00")))
+
+        # Give users 10 points initially, but in 10 transactions, so we have
+        # something interesting to show in the transaction view.
+        for _ in range(10):
+            add_income(tx, users, Points(Decimal("1.00")))
+
         _sessions = add_sessions(tx, users)
         _markets = add_markets(tx, users)
         tx.commit()

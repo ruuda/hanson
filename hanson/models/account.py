@@ -84,7 +84,7 @@ class UserAccount(NamedTuple):
             )
             result: Optional[Tuple[int, Decimal]] = cur.fetchone()
             if result is not None:
-                return UserAccount(*result)
+                return UserAccount(id=result[0], balance=Points(result[1]))
 
         with tx.cursor() as cur:
             cur.execute(

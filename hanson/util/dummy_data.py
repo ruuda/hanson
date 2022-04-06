@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
+from decimal import Decimal
+from textwrap import dedent
+from typing import List
+
 from hanson.database import Transaction, connect_default
-from hanson.models.user import User
-from hanson.models.session import Session
+from hanson.models.currency import Points
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
-
-from datetime import datetime, timezone
-from typing import List
-from textwrap import dedent
+from hanson.models.session import Session
+from hanson.models.transaction import create_transaction_income
+from hanson.models.user import User
 
 
 def add_users(tx: Transaction) -> List[User]:
@@ -19,6 +22,11 @@ def add_users(tx: Transaction) -> List[User]:
 
 def add_sessions(tx: Transaction, users: List[User]) -> List[Session]:
     return [Session.create(tx, user.id) for user in users]
+
+
+def add_income(tx: Transaction, users: List[User], amount: Points) -> None:
+    for user in users:
+        create_transaction_income(tx, user.id, amount)
 
 
 def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
@@ -113,6 +121,7 @@ def main() -> None:
     conn = connect_default()
     with conn.begin() as tx:
         users = add_users(tx)
+        add_income(tx, users, Points(Decimal("10.00")))
         _sessions = add_sessions(tx, users)
         _markets = add_markets(tx, users)
         tx.commit()

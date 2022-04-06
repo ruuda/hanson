@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from typing import Iterable, NamedTuple, Optional, Tuple
-from dataclasses import dataclass
 from decimal import Decimal
+from typing import Iterable, NamedTuple, Optional, Tuple
 
-from hanson.models.currency import Amount, Points, OutcomeShares
 from hanson.database import Transaction
+from hanson.models.currency import Amount, OutcomeShares, Points
 
 
 class UserAccount(NamedTuple):
     id: int
     balance: Amount
-    market_id: Optional[int]
+    market_id: Optional[int] = None
 
     @staticmethod
     def list_all_for_user(tx: Transaction, user_id: int) -> Iterable[UserAccount]:
@@ -40,13 +39,13 @@ class UserAccount(NamedTuple):
                 """,
                 (user_id,),
             )
-            result: Optional[Tuple[
-                int, str, Optional[int], Decimal, Optional[int]
-            ]] = cur.fetchone()
+            result: Optional[
+                Tuple[int, str, Optional[int], Decimal, Optional[int]]
+            ] = cur.fetchone()
 
             while result is not None:
                 id, account_type, outcome_id, balance, market_id = result
-                if account_type == 'points':
+                if account_type == "points":
                     assert outcome_id is None
                     assert market_id is None
                     yield UserAccount(
@@ -54,7 +53,7 @@ class UserAccount(NamedTuple):
                         balance=Points(balance),
                         market_id=None,
                     )
-                elif account_type == 'outcome_shares':
+                elif account_type == "outcome_shares":
                     assert outcome_id is not None
                     assert market_id is not None
                     yield UserAccount(
@@ -64,6 +63,37 @@ class UserAccount(NamedTuple):
                     )
                 else:
                     raise Exception("Invalid account type.")
+
+    # TODO: Add a test, then test that when called twice, it returns the same id.
+    @staticmethod
+    def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount:
+        """
+        Return the points account for the given user,
+        or create it if it doesn't yet exist.
+        """
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                SELECT account.id, account_current_balance(account.id)
+                FROM   account
+                WHERE  type = 'points' AND owner_user_id = %s
+                """,
+                (user_id,),
+            )
+            result: Optional[Tuple[int, Decimal]] = cur.fetchone()
+            if result is not None:
+                return UserAccount(*result)
+
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO account (type, owner_user_id) VALUES ('points', %s)
+                RETURNING id;
+                """,
+                (user_id,),
+            )
+            result: Tuple[int] = cur.fetchone()
+            return UserAccount(id=result[0], balance=Points.zero())
 
 
 def get_user_points_balance(tx: Transaction, user_id: int) -> Optional[Points]:
@@ -100,7 +130,9 @@ def get_market_points_balance(tx: Transaction, market_id: int) -> Optional[Point
             return None
 
 
-def get_user_share_balance(tx: Transaction, user_id: int, outcome_id: int) -> Optional[OutcomeShares]:
+def get_user_share_balance(
+    tx: Transaction, user_id: int, outcome_id: int
+) -> Optional[OutcomeShares]:
     with tx.cursor() as cur:
         cur.execute(
             """
@@ -122,7 +154,9 @@ def get_user_share_balance(tx: Transaction, user_id: int, outcome_id: int) -> Op
             return None
 
 
-def get_market_share_balance(tx: Transaction, market_id: int, outcome_id: int) -> Optional[OutcomeShares]:
+def get_market_share_balance(
+    tx: Transaction, market_id: int, outcome_id: int
+) -> Optional[OutcomeShares]:
     with tx.cursor() as cur:
         cur.execute(
             """

@@ -15,7 +15,7 @@ class Points(Amount):
 
     @staticmethod
     def zero() -> Points:
-        return Points(Decimal('0.00'))
+        return Points(Decimal("0.00"))
 
     def __add__(self, other: Points) -> Points:
         return Points(self.amount + other.amount)
@@ -32,7 +32,7 @@ class OutcomeShares(Amount):
 
     @staticmethod
     def zero(outcome_id: int) -> OutcomeShares:
-        return OutcomeShares(Decimal('0.00'), outcome_id)
+        return OutcomeShares(Decimal("0.00"), outcome_id)
 
     def __add__(self, other: OutcomeShares) -> OutcomeShares:
         assert self.outcome_id == other.outcome_id

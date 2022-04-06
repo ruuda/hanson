@@ -42,32 +42,35 @@ class Post(NamedTuple):
                     max_value=balance,
                     market_value=balance,
                 )
-            ]
+            ],
         )
 
     @staticmethod
-    def for_market(tx: Transaction, market_id: int, balances: List[OutcomeShares]) -> Post:
+    def for_market(
+        tx: Transaction, market_id: int, balances: List[OutcomeShares]
+    ) -> Post:
         """
         Build the post for a particular market, that includes as entries all of
         the outcomes for which the user has a non-zero balance.
         """
         market = Market.get_by_id(tx, market_id)
         market_outcomes = {
-            oc.id: oc
-            for oc in Outcome.get_all_by_market(tx, market_id).outcomes
+            oc.id: oc for oc in Outcome.get_all_by_market(tx, market_id).outcomes
         }
 
         entries = []
         for share_balance in balances:
             outcome = market_outcomes[share_balance.outcome_id]
-            entries.append(Entry(
-                name=outcome.name,
-                amount_native=share_balance,
-                # TODO: Compute the max value.
-                max_value=Points(share_balance.amount),
-                # TODO: Compute the market value.
-                market_value=Points(share_balance.amount),
-            ))
+            entries.append(
+                Entry(
+                    name=outcome.name,
+                    amount_native=share_balance,
+                    # TODO: Compute the max value.
+                    max_value=Points(share_balance.amount),
+                    # TODO: Compute the market value.
+                    market_value=Points(share_balance.amount),
+                )
+            )
 
         entries.sort(key=lambda entry: entry.market_value)
 
@@ -105,7 +108,10 @@ class AssetReport(NamedTuple):
 
         posts = [
             Post.for_points(user_points_balance),
-            *(Post.for_market(tx, market_id, balances) for market_id, balances in markets),
+            *(
+                Post.for_market(tx, market_id, balances)
+                for market_id, balances in markets
+            ),
         ]
 
         return AssetReport(

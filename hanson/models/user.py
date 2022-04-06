@@ -145,4 +145,4 @@ class User(NamedTuple):
                 result = cur.fetchone()
 
     def get_points_balance(self, tx: Transaction) -> Points:
-        return account.get_user_points_balance(tx, self.id) or Points(Decimal('0.00'))
+        return account.get_user_points_balance(tx, self.id) or Points(Decimal("0.00"))

@@ -21,17 +21,15 @@ class Outcome:
         name: str,
         color: str,
     ) -> OutcomeDiscrete:
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO "outcome" (market_id, name, color)
-                VALUES (%s, %s, %s)
-                RETURNING id;
-                """,
-                (market_id, name, color),
-            )
-            outcome_id = cur.fetchone()[0]
-            return OutcomeDiscrete(outcome_id, market_id, name, color)
+        outcome_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO "outcome" (market_id, name, color)
+            VALUES (%s, %s, %s)
+            RETURNING id;
+            """,
+            (market_id, name, color),
+        )
+        return OutcomeDiscrete(outcome_id, market_id, name, color)
 
     @staticmethod
     def create_float(
@@ -41,17 +39,15 @@ class Outcome:
         color: str,
         value: float,
     ) -> OutcomeFloat:
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO "outcome" (market_id, name, color, value_float)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id;
-                """,
-                (market_id, name, color, value),
-            )
-            outcome_id = cur.fetchone()[0]
-            return OutcomeFloat(outcome_id, market_id, name, color, value)
+        outcome_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO "outcome" (market_id, name, color, value_float)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (market_id, name, color, value),
+        )
+        return OutcomeFloat(outcome_id, market_id, name, color, value)
 
     @staticmethod
     def create_datetime(
@@ -62,17 +58,15 @@ class Outcome:
         value: datetime,
     ) -> OutcomeDatetime:
         assert value.tzinfo is not None
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO "outcome" (market_id, name, color, value_datetime)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id;
-                """,
-                (market_id, name, color, value),
-            )
-            outcome_id = cur.fetchone()[0]
-            return OutcomeDatetime(outcome_id, market_id, name, color, value)
+        outcome_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO "outcome" (market_id, name, color, value_datetime)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id;
+            """,
+            (market_id, name, color, value),
+        )
+        return OutcomeDatetime(outcome_id, market_id, name, color, value)
 
     @staticmethod
     def get_all_by_market_unchecked(
@@ -82,36 +76,32 @@ class Outcome:
         Iterate all outcomes for a given market, but don't check that the type
         is consistent for all outcomes.
         """
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  name,
-                  color,
-                  value_float,
-                  value_datetime
-                FROM
-                  "outcome"
-                WHERE
-                  market_id = %s
-                """,
-                (market_id,),
-            )
-            while True:
-                row: Optional[
-                    Tuple[int, str, str, Optional[float], Optional[datetime]]
-                ] = cur.fetchone()
-                if row is None:
-                    break
-
-                id, name, color, value_float, value_datetime = row
-                if value_float is not None:
-                    yield OutcomeFloat(id, market_id, name, color, value_float)
-                elif value_datetime is not None:
-                    yield OutcomeDatetime(id, market_id, name, color, value_datetime)
-                else:
-                    yield OutcomeDiscrete(id, market_id, name, color)
+        id: int
+        name: str
+        color: str
+        value_float: Optional[float]
+        value_datetime: Optional[datetime]
+        for id, name, color, value_float, value_datetime in tx.execute_fetch_all(
+            """
+            SELECT
+              id,
+              name,
+              color,
+              value_float,
+              value_datetime
+            FROM
+              "outcome"
+            WHERE
+              market_id = %s
+            """,
+            (market_id,),
+        ):
+            if value_float is not None:
+                yield OutcomeFloat(id, market_id, name, color, value_float)
+            elif value_datetime is not None:
+                yield OutcomeDatetime(id, market_id, name, color, value_datetime)
+            else:
+                yield OutcomeDiscrete(id, market_id, name, color)
 
     @staticmethod
     def get_all_by_market(tx: Transaction, market_id: int) -> Outcomes:

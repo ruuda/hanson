@@ -23,52 +23,48 @@ class UserAccount(NamedTuple):
         be grouped in a single pass), with the points account (that has no
         market) at the start.
         """
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                  account.id,
-                  account.type,
-                  account.outcome_id,
-                  account_current_balance(account.id),
-                  outcome.market_id
-                FROM
-                  account
-                LEFT OUTER JOIN
-                  outcome ON account.outcome_id = outcome.id
-                WHERE
-                  owner_user_id = %s
-                ORDER BY
-                  outcome.market_id NULLS FIRST
-                """,
-                (user_id,),
-            )
-            result: Optional[
-                Tuple[int, str, Optional[int], Decimal, Optional[int]]
-            ] = cur.fetchone()
-
-            while result is not None:
-                id, account_type, outcome_id, balance, market_id = result
-                if account_type == "points":
-                    assert outcome_id is None
-                    assert market_id is None
-                    yield UserAccount(
-                        id=id,
-                        balance=Points(balance),
-                        market_id=None,
-                    )
-                elif account_type == "outcome_shares":
-                    assert outcome_id is not None
-                    assert market_id is not None
-                    yield UserAccount(
-                        id=id,
-                        balance=OutcomeShares(balance, outcome_id),
-                        market_id=market_id,
-                    )
-                else:
-                    raise Exception("Invalid account type.")
-
-                result = cur.fetchone()
+        id: int
+        account_type: str
+        outcome_id: Optional[int]
+        balance: Decimal
+        market_id: Optional[int]
+        for id, account_type, outcome_id, balance, market_id in tx.execute_fetch_all(
+            """
+            SELECT
+              account.id,
+              account.type,
+              account.outcome_id,
+              account_current_balance(account.id),
+              outcome.market_id
+            FROM
+              account
+            LEFT OUTER JOIN
+              outcome ON account.outcome_id = outcome.id
+            WHERE
+              owner_user_id = %s
+            ORDER BY
+              outcome.market_id NULLS FIRST
+            """,
+            (user_id,),
+        ):
+            if account_type == "points":
+                assert outcome_id is None
+                assert market_id is None
+                yield UserAccount(
+                    id=id,
+                    balance=Points(balance),
+                    market_id=None,
+                )
+            elif account_type == "outcome_shares":
+                assert outcome_id is not None
+                assert market_id is not None
+                yield UserAccount(
+                    id=id,
+                    balance=OutcomeShares(balance, outcome_id),
+                    market_id=market_id,
+                )
+            else:
+                raise Exception("Invalid account type.")
 
     @staticmethod
     def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount:
@@ -76,29 +72,25 @@ class UserAccount(NamedTuple):
         Return the points account for the given user,
         or create it if it doesn't yet exist.
         """
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-                FROM   account
-                WHERE  type = 'points' AND owner_user_id = %s
-                """,
-                (user_id,),
-            )
-            result: Optional[Tuple[int, Decimal]] = cur.fetchone()
-            if result is not None:
-                return UserAccount(id=result[0], balance=Points(result[1]))
+        result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
+            """
+            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
+            FROM   account
+            WHERE  type = 'points' AND owner_user_id = %s
+            """,
+            (user_id,),
+        )
+        if result is not None:
+            return UserAccount(id=result[0], balance=Points(result[1]))
 
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO account (type, owner_user_id) VALUES ('points', %s)
-                RETURNING id;
-                """,
-                (user_id,),
-            )
-            result: Tuple[int] = cur.fetchone()
-            return UserAccount(id=result[0], balance=Points.zero())
+        account_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO account (type, owner_user_id) VALUES ('points', %s)
+            RETURNING id;
+            """,
+            (user_id,),
+        )
+        return UserAccount(id=account_id, balance=Points.zero())
 
 
 class MarketAccount(NamedTuple):
@@ -116,37 +108,33 @@ class MarketAccount(NamedTuple):
         Return the points account for the given market,
         or create it if it doesn't yet exist.
         """
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-                FROM   account
-                WHERE  type = 'points' AND owner_market_id = %s
-                """,
-                (market_id,),
-            )
-            result: Optional[Tuple[int, Decimal]] = cur.fetchone()
-            if result is not None:
-                return MarketAccount(
-                    id=result[0],
-                    balance=Points(result[1]),
-                    market_id=market_id,
-                )
-
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO account (type, owner_market_id) VALUES ('points', %s)
-                RETURNING id;
-                """,
-                (market_id,),
-            )
-            result: Tuple[int] = cur.fetchone()
+        result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
+            """
+            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
+            FROM   account
+            WHERE  type = 'points' AND owner_market_id = %s
+            """,
+            (market_id,),
+        )
+        if result is not None:
             return MarketAccount(
                 id=result[0],
-                balance=Points.zero(),
+                balance=Points(result[1]),
                 market_id=market_id,
             )
+
+        account_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO account (type, owner_market_id) VALUES ('points', %s)
+            RETURNING id;
+            """,
+            (market_id,),
+        )
+        return MarketAccount(
+            id=account_id,
+            balance=Points.zero(),
+            market_id=market_id,
+        )
 
 
 def get_user_points_balance(tx: Transaction, user_id: int) -> Optional[Points]:

@@ -65,88 +65,78 @@ class User(NamedTuple):
         """
         assert User.is_valid_username(username)
         assert User.is_valid_full_name(full_name)
-        with tx.cursor() as cur:
-            cur.execute(
-                'INSERT INTO "user" DEFAULT VALUES RETURNING id, created_at;',
-            )
-            user_id, created_at = cur.fetchone()
-            cur.execute(
-                "INSERT INTO user_username (user_id, username) VALUES (%s, %s);",
-                (user_id, username),
-            )
-            cur.execute(
-                "INSERT INTO user_full_name (user_id, full_name) VALUES (%s, %s);",
-                (user_id, full_name),
-            )
-            return User(user_id, username, full_name, created_at)
+        user_id, created_at = tx.execute_fetch_one(
+            'INSERT INTO "user" DEFAULT VALUES RETURNING id, created_at;',
+        )
+        tx.execute(
+            "INSERT INTO user_username (user_id, username) VALUES (%s, %s);",
+            (user_id, username),
+        )
+        tx.execute(
+            "INSERT INTO user_full_name (user_id, full_name) VALUES (%s, %s);",
+            (user_id, full_name),
+        )
+        return User(user_id, username, full_name, created_at)
 
     @staticmethod
     def get_by_username(tx: Transaction, username: str) -> Optional[User]:
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT user_id
-                FROM user_username
-                WHERE username = %s
-                """,
-                (username,),
-            )
-            result: Optional[Tuple[int]] = cur.fetchone()
-            if result is None:
-                return None
-            else:
-                return User.get_by_id(tx, result[0])
+        result: Optional[Tuple[int]] = tx.execute_fetch_optional(
+            """
+            SELECT user_id
+            FROM user_username
+            WHERE username = %s
+            """,
+            (username,),
+        )
+        if result is None:
+            return None
+        else:
+            return User.get_by_id(tx, result[0])
 
     @staticmethod
     def get_by_id(tx: Transaction, user_id: int) -> Optional[User]:
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  user_current_username(id),
-                  user_current_full_name(id),
-                  created_at
-                FROM
-                  "user"
-                WHERE
-                  id = %s;
-                """,
-                (user_id,),
-            )
-            result: Optional[Tuple[int, str, str, datetime]] = cur.fetchone()
-            if result is None:
-                return None
-            else:
-                # We told the typechecker that none of these fields are null,
-                # but due to the way the database schema is set up, this is not
-                # guaranteed by the database.
-                assert all(field is not None for field in result)
-                return User(*result)
+        result: Optional[Tuple[int, str, str, datetime]] = tx.execute_fetch_optional(
+            """
+            SELECT
+              id,
+              user_current_username(id),
+              user_current_full_name(id),
+              created_at
+            FROM
+              "user"
+            WHERE
+              id = %s;
+            """,
+            (user_id,),
+        )
+        if result is None:
+            return None
+        else:
+            # We told the typechecker that none of these fields are null,
+            # but due to the way the database schema is set up, this is not
+            # guaranteed by the database.
+            assert all(field is not None for field in result)
+            return User(*result)
 
     @staticmethod
     def list_all(tx: Transaction) -> Iterable[User]:
-        with tx.cursor() as cur:
-            cur.execute(
-                """
-                SELECT
-                  id,
-                  user_current_username(id),
-                  user_current_full_name(id),
-                  created_at
-                FROM
-                  "user"
-                ORDER BY
-                  -- TODO: Order by net worth, once we have that.
-                  created_at ASC;
-                """,
-            )
-            result: Optional[Tuple[int, str, str, datetime]] = cur.fetchone()
-
-            while result is not None:
-                assert all(field is not None for field in result)
-                yield User(*result)
-                result = cur.fetchone()
+        result: Tuple[int, str, str, datetime]
+        for result in tx.execute_fetch_all(
+            """
+            SELECT
+              id,
+              user_current_username(id),
+              user_current_full_name(id),
+              created_at
+            FROM
+              "user"
+            ORDER BY
+              -- TODO: Order by net worth, once we have that.
+              created_at ASC;
+            """,
+        ):
+            assert all(field is not None for field in result)
+            yield User(*result)
 
     def get_points_balance(self, tx: Transaction) -> Points:
         return account.get_user_points_balance(tx, self.id) or Points(Decimal("0.00"))

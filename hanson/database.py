@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
-from typing import Iterator, Optional, NamedTuple
+from typing import Any, Dict, Iterator, Iterable, Optional, NamedTuple, Tuple, Union
 
 import psycopg2.extensions  # type: ignore
 import psycopg2.extras  # type: ignore
@@ -25,6 +25,64 @@ class Transaction:
 
     def cursor(self) -> psycopg2.extensions.cursor:
         return self.conn.cursor()
+
+    def execute(
+        self,
+        query: str,
+        params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
+    ) -> None:
+        """Execute a query that does not return results."""
+        with self.cursor() as cur:
+            cur.execute(query, params)
+
+    def execute_fetch_optional(
+        self,
+        query: str,
+        params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
+    ) -> Optional[Tuple[Any, ...]]:
+        """Execute a query and return the first result."""
+        with self.cursor() as cur:
+            cur.execute(query, params)
+            result: Optional[Tuple[Any, ...]] = cur.fetchone()
+            return result
+
+    def execute_fetch_one(
+        self,
+        query: str,
+        params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
+    ) -> Tuple[Any, ...]:
+        """
+        Execute a query and return the resulting row, fail if there is no result.
+        """
+        result = self.execute_fetch_optional(query, params)
+        assert result is not None, "Expected exactly one result."
+        return result
+
+    def execute_fetch_scalar(
+        self,
+        query: str,
+        params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
+    ) -> Any:
+        """Execute a query and return the result, fail if there is no result."""
+        result = self.execute_fetch_one(query, params)
+        assert len(result) == 1, "Expected a result with a single column."
+        return result[0]
+
+    def execute_fetch_all(
+        self,
+        query: str,
+        params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
+    ) -> Iterable[Tuple[Any, ...]]:
+        """Execute a query and iterate all results."""
+        with self.cursor() as cur:
+            cur.execute(query, params)
+            while True:
+                result: Optional[Tuple[Any, ...]] = cur.fetchone()
+
+                if result is None:
+                    return
+
+                yield result
 
 
 class ConnectionPool(NamedTuple):

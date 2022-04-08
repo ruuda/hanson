@@ -1,3 +1,7 @@
+# Mypy does not understand the `setup_out` kwargs to subprocess.run throughout
+# this file, so silence those errors.
+# type: ignore[call-overload]
+
 """
 This module defines Pytest fixtures. The main fixtures are `db_connection` and
 `tx`. For the tests, we spawn an entirely new Postgres instance per test
@@ -16,6 +20,7 @@ from hanson.database import ConnectionPool, Transaction
 from hanson.models.user import User
 from hanson.models.market import Market
 
+
 pg_host = f"{os.getcwd()}/run/db_test/socket"
 pg_env = {
     "PATH": os.getenv("PATH"),
@@ -31,12 +36,12 @@ pg_env = {
 setup_out = {"stdout": DEVNULL, "stderr": DEVNULL}
 
 
-def run_postgres() -> Popen:
+def run_postgres() -> Popen[bytes]:
     """
     Start a Postgres process and wait for it to be ready before returning it.
     """
     cmd_postgres = ["tools/run_postgres.py", "--force-init", "run/db_test"]
-    postgres = Popen(cmd_postgres, **setup_out)
+    postgres: Popen[bytes] = Popen(cmd_postgres, **setup_out)
 
     # Wait for Postgres to be available.
     start_second = time.monotonic()
@@ -94,7 +99,7 @@ def user(tx: Transaction) -> Iterable[User]:
 
 
 @pytest.fixture(scope="function")
-def market(tx: Transaction, user: User) -> Iterable[User]:
+def market(tx: Transaction, user: User) -> Iterable[Market]:
     yield Market.create(
         tx,
         author_user_id=user.id,

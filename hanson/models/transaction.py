@@ -20,45 +20,39 @@ def create_transaction_income(
     account = UserAccount.ensure_points_account(tx, user_id)
     assert isinstance(account.balance, Points)
 
-    with tx.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO "transaction" (type) VALUES ('income') RETURNING id;
-            """
-        )
-        transaction_id: int = cur.fetchone()[0]
+    transaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "transaction" (type) VALUES ('income') RETURNING id;
+        """
+    )
 
-    with tx.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO "mutation" (transaction_id, debit_account_id, amount)
-            VALUES (%s, %s, %s)
-            RETURNING id;
-            """,
-            (transaction_id, account.id, amount.amount),
-        )
-        mutation_id: int = cur.fetchone()[0]
+    mutation_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "mutation" (transaction_id, debit_account_id, amount)
+        VALUES (%s, %s, %s)
+        RETURNING id;
+        """,
+        (transaction_id, account.id, amount.amount),
+    )
 
-    with tx.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO
-              "account_balance" (account_id, mutation_id, post_balance)
-            VALUES
-              ( %(account_id)s
-              , %(mutation_id)s
-              , COALESCE(account_current_balance(%(account_id)s), 0) + %(amount)s
-              )
-            RETURNING
-              post_balance;
-            """,
-            {
-                "account_id": account.id,
-                "mutation_id": mutation_id,
-                "amount": amount.amount,
-            },
-        )
-        post_balance: Decimal = cur.fetchone()[0]
-        assert amount + account.balance == Points(post_balance)
+    post_balance: Decimal = tx.execute_fetch_scalar(
+        """
+        INSERT INTO
+          "account_balance" (account_id, mutation_id, post_balance)
+        VALUES
+          ( %(account_id)s
+          , %(mutation_id)s
+          , COALESCE(account_current_balance(%(account_id)s), 0) + %(amount)s
+          )
+        RETURNING
+          post_balance;
+        """,
+        {
+            "account_id": account.id,
+            "mutation_id": mutation_id,
+            "amount": amount.amount,
+        },
+    )
+    assert amount + account.balance == Points(post_balance)
 
     return transaction_id

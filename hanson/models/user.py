@@ -22,9 +22,8 @@ class User(NamedTuple):
 
     @staticmethod
     def is_valid_full_name(full_name: str) -> bool:
-        return User.validate_full_name_get_violation(full_name) is None
+        return len(full_name) > 0 and User.validate_full_name_get_violation(full_name) is None
 
-    # TODO: Add unit test for this.
     @staticmethod
     def validate_full_name_get_violation(full_name: str) -> Optional[str]:
         """
@@ -46,6 +45,8 @@ class User(NamedTuple):
             "Me",  # Mark enclosing
             "Pc",  # Punctucation connector
             "Pd",  # Punctuation dash
+            "Pi",  # Punctuation initial (quotes etc.)
+            "Pf",  # Punctuation final (quotes etc.)
             "Zs",  # Separator space
         }
         for ch in full_name:

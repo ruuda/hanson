@@ -8,6 +8,10 @@ from hanson.models.currency import Amount, OutcomeShares, Points
 
 
 class UserAccount(NamedTuple):
+    """
+    An account, that holds points our outcome shares, which belongs to a user.
+    """
+
     id: int
     balance: Amount
     market_id: Optional[int] = None
@@ -95,6 +99,54 @@ class UserAccount(NamedTuple):
             )
             result: Tuple[int] = cur.fetchone()
             return UserAccount(id=result[0], balance=Points.zero())
+
+
+class MarketAccount(NamedTuple):
+    """
+    An account, that holds points our outcome shares, which belongs to a market.
+    """
+
+    id: int
+    balance: Amount
+    market_id: int
+
+    @staticmethod
+    def ensure_points_account(tx: Transaction, market_id: int) -> MarketAccount:
+        """
+        Return the points account for the given market,
+        or create it if it doesn't yet exist.
+        """
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
+                FROM   account
+                WHERE  type = 'points' AND owner_market_id = %s
+                """,
+                (market_id,),
+            )
+            result: Optional[Tuple[int, Decimal]] = cur.fetchone()
+            if result is not None:
+                return MarketAccount(
+                    id=result[0],
+                    balance=Points(result[1]),
+                    market_id=market_id,
+                )
+
+        with tx.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO account (type, owner_market_id) VALUES ('points', %s)
+                RETURNING id;
+                """,
+                (market_id,),
+            )
+            result: Tuple[int] = cur.fetchone()
+            return MarketAccount(
+                id=result[0],
+                balance=Points.zero(),
+                market_id=market_id,
+            )
 
 
 def get_user_points_balance(tx: Transaction, user_id: int) -> Optional[Points]:

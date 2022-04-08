@@ -7,15 +7,14 @@ session, so tests don't interfere with the development database.
 import os
 import subprocess
 import time
-from contextlib import contextmanager
+from subprocess import DEVNULL, Popen
 from typing import Iterable
-from subprocess import Popen, DEVNULL
 
 import pytest
 
 from hanson.database import ConnectionPool, Transaction
 from hanson.models.user import User
-
+from hanson.models.market import Market
 
 pg_host = f"{os.getcwd()}/run/db_test/socket"
 pg_env = {
@@ -89,6 +88,16 @@ def tx(db_connection: ConnectionPool) -> Iterable[Transaction]:
 def user(tx: Transaction) -> Iterable[User]:
     yield User.create(
         tx,
-        username="henk",
-        full_name="Henk de Steen",
+        username="tester",
+        full_name="Test User One",
+    )
+
+
+@pytest.fixture(scope="function")
+def market(tx: Transaction, user: User) -> Iterable[User]:
+    yield Market.create(
+        tx,
+        author_user_id=user.id,
+        title="Test Market",
+        description="The default market for use in tests.",
     )

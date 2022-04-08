@@ -22,7 +22,10 @@ class User(NamedTuple):
 
     @staticmethod
     def is_valid_full_name(full_name: str) -> bool:
-        return len(full_name) > 0 and User.validate_full_name_get_violation(full_name) is None
+        return (
+            len(full_name) > 0
+            and User.validate_full_name_get_violation(full_name) is None
+        )
 
     @staticmethod
     def validate_full_name_get_violation(full_name: str) -> Optional[str]:

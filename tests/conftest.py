@@ -29,10 +29,7 @@ pg_env = {
 # Default to silencing all database setup output, because it makes the tests
 # super noisy, pytest captures all of it. But should we need to debug the setup
 # code, we can change it here.
-setup_out = {
-    "stdout": DEVNULL,
-    "stderr": DEVNULL
-}
+setup_out = {"stdout": DEVNULL, "stderr": DEVNULL}
 
 
 def run_postgres() -> Popen:

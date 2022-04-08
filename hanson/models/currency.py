@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Amount:
     amount: Decimal
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Points(Amount):
     pass
 
@@ -26,7 +26,7 @@ class Points(Amount):
         return self
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class OutcomeShares(Amount):
     outcome_id: int
 

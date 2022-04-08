@@ -54,6 +54,8 @@ class Post(NamedTuple):
         the outcomes for which the user has a non-zero balance.
         """
         market = Market.get_by_id(tx, market_id)
+        assert market is not None
+
         market_outcomes = {
             oc.id: oc for oc in Outcome.get_all_by_market(tx, market_id).outcomes
         }
@@ -78,7 +80,7 @@ class Post(NamedTuple):
             name=market.title,
             href=f"/markets/{market_id}",
             max_value=max(*(entry.max_value for entry in entries)),
-            market_value=sum(entry.market_value for entry in entries),
+            market_value=sum(entry.market_value for entry in entries) or Points.zero(),
             entries=entries,
         )
 

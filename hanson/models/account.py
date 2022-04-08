@@ -66,7 +66,6 @@ class UserAccount(NamedTuple):
 
                 result = cur.fetchone()
 
-    # TODO: Add a test, then test that when called twice, it returns the same id.
     @staticmethod
     def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount:
         """
@@ -76,7 +75,7 @@ class UserAccount(NamedTuple):
         with tx.cursor() as cur:
             cur.execute(
                 """
-                SELECT account.id, account_current_balance(account.id)
+                SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
                 FROM   account
                 WHERE  type = 'points' AND owner_user_id = %s
                 """,

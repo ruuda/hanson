@@ -20,6 +20,7 @@ let
     # because that one is not able to find type hints of dependencies, and if
     # we include it like this, then Mypy *can* typecheck Flask functions.
     ps.mypy
+    ps.pytest
   ];
   python = pkgs.python3.withPackages (ps:
     (runtimeDependencies ps) ++ (developmentDependencies ps)

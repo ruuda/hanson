@@ -29,6 +29,14 @@ Run the app in development mode:
 
 By default Flask will listen on `localhost:5000`.
 
+Run the tests:
+
+    python -m pytest tests
+
+The tests will use an independent database at `run/db_test`, so the tests do not
+interfere with the development database. The tests start this Postgres instance
+in the test fixture, so this does not depend on any daemon to be running.
+
 [prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
 [nix]:               https://nixos.org/
 [nix-2.3]:           https://releases.nixos.org/?prefix=nix/nix-2.3/

@@ -113,10 +113,6 @@ def validate_migrations(defs: List[MigrationDef]) -> None:
                 print(f"  {mig_def.fname}")
             sys.exit(1)
 
-        connection = psycopg2.connect(
-            "dbname=hanson user=hanson_setup password=hanson_setup"
-        )
-
 
 def transaction() -> psycopg2.extensions.connection:
     return psycopg2.connect("dbname=hanson user=hanson_setup password=hanson_setup")

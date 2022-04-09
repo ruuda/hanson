@@ -1,13 +1,15 @@
+import math
+
 from flask import Blueprint, render_template
 
 from hanson.database import Transaction
 from hanson.http import Response
+from hanson.models.account import MarketAccount
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
-from hanson.models.account import MarketAccount
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -61,10 +63,11 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         for outcome in outcomes.outcomes
     ]
 
-    # TODO: Add real probabilities.
-    ps = [1 / n for n in range(1, 100)][: len(outcomes.outcomes)]
-    total = sum(ps)
-    ps = [p / total for p in ps]
+    # Probabilities are proportional to exp(-pool_balance) per share, for the
+    # logarithmic market scoring rule.
+    numers = [math.exp(-pool_account.balance.amount) for pool_account in pool_accounts]
+    denom = sum(numers)
+    ps = [x / denom for x in numers]
 
     return Response.ok_html(
         render_template(

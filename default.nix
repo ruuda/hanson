@@ -25,14 +25,22 @@ let
   python = pkgs.python3.withPackages (ps:
     (runtimeDependencies ps) ++ (developmentDependencies ps)
   );
+  ghc = pkgs.ghc.withPackages (ps: [
+    ps.blaze-html
+    ps.postgresql-simple
+    ps.scotty
+    ps.text
+  ]);
 in
   pkgs.buildEnv {
     name = "hanson-devenv";
     paths = [
       pkgs.black
+      pkgs.gnumake
+      pkgs.mkdocs
       pkgs.overmind
       pkgs.postgresql_14
-      pkgs.mkdocs
       python
+      ghc
     ];
   }

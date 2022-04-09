@@ -104,7 +104,7 @@ input, label {
 
 .columns {
   display: grid;
-  grid-template-columns: auto 16rem 18rem 16rem auto;
+  grid-template-columns: auto 20rem 20rem 20rem auto;
   grid-template-areas: "margin-left left mid right margin-right";
 }
 
@@ -237,7 +237,7 @@ a#home-link {
 }
 
 #main .aside-content {
-  width: 14rem;
+  width: 18rem;
   color: #78a;
 }
 

@@ -36,6 +36,7 @@ in
     name = "hanson-devenv";
     paths = [
       pkgs.black
+      pkgs.entr
       pkgs.gnumake
       pkgs.mkdocs
       pkgs.overmind

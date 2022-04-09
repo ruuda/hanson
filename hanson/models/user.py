@@ -136,6 +136,3 @@ class User(NamedTuple):
         ):
             assert all(field is not None for field in result)
             yield User(*result)
-
-    def get_points_balance(self, tx: Transaction) -> Points:
-        return account.get_user_points_balance(tx, self.id) or Points(Decimal("0.00"))

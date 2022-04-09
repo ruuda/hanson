@@ -1,23 +1,30 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Iterable, NamedTuple, Optional, Tuple
+from typing import Generic, Iterable, Optional, Tuple, TypeVar
+from dataclasses import dataclass
 
 from hanson.database import Transaction
 from hanson.models.currency import Amount, OutcomeShares, Points
 
 
-class UserAccount(NamedTuple):
+Balance = TypeVar("Balance", bound=Amount)
+
+
+@dataclass(frozen=True)
+class UserAccount(Generic[Balance]):
     """
     An account, that holds points our outcome shares, which belongs to a user.
     """
 
     id: int
-    balance: Amount
+    balance: Balance
     market_id: Optional[int] = None
 
     @staticmethod
-    def list_all_for_user(tx: Transaction, user_id: int) -> Iterable[UserAccount]:
+    def list_all_for_user(
+        tx: Transaction, user_id: int
+    ) -> Iterable[UserAccount[Amount]]:
         """
         List all the accounts that the user has, ordered by market (so they can
         be grouped in a single pass), with the points account (that has no
@@ -67,7 +74,7 @@ class UserAccount(NamedTuple):
                 raise Exception("Invalid account type.")
 
     @staticmethod
-    def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount:
+    def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount[Points]:
         """
         Return the points account for the given user,
         or create it if it doesn't yet exist.
@@ -93,17 +100,18 @@ class UserAccount(NamedTuple):
         return UserAccount(id=account_id, balance=Points.zero())
 
 
-class MarketAccount(NamedTuple):
+@dataclass(frozen=True)
+class MarketAccount(Generic[Balance]):
     """
     An account, that holds points our outcome shares, which belongs to a market.
     """
 
     id: int
-    balance: Amount
+    balance: Balance
     market_id: int
 
     @staticmethod
-    def ensure_points_account(tx: Transaction, market_id: int) -> MarketAccount:
+    def ensure_points_account(tx: Transaction, market_id: int) -> MarketAccount[Points]:
         """
         Return the points account for the given market,
         or create it if it doesn't yet exist.
@@ -136,39 +144,44 @@ class MarketAccount(NamedTuple):
             market_id=market_id,
         )
 
-
-def get_user_points_balance(tx: Transaction, user_id: int) -> Optional[Points]:
-    with tx.cursor() as cur:
-        cur.execute(
+    @staticmethod
+    def ensure_pool_account(
+        tx: Transaction, market_id: int, outcome_id: int
+    ) -> MarketAccount[OutcomeShares]:
+        """
+        Return the outcome shares account for the given market (for use by the
+        market maker), or create it if it doesn't yet exist.
+        """
+        result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
-            SELECT account_current_balance(id)
-            FROM   account
-            WHERE  owner_user_id = %s AND type = 'points'
+            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
+              FROM account
+             WHERE type = 'outcome_shares'
+               AND outcome_id = %s
+               AND owner_market_id = %s
             """,
-            (user_id,),
+            (outcome_id, market_id),
         )
-        result = cur.fetchone()
         if result is not None:
-            return Points(result[0])
-        else:
-            return None
+            return MarketAccount(
+                id=result[0],
+                balance=OutcomeShares(result[1], outcome_id),
+                market_id=market_id,
+            )
 
-
-def get_market_points_balance(tx: Transaction, market_id: int) -> Optional[Points]:
-    with tx.cursor() as cur:
-        cur.execute(
+        account_id: int = tx.execute_fetch_scalar(
             """
-            SELECT account_current_balance(id)
-            FROM   account
-            WHERE  owner_market_id = %s AND type = 'points'
+            INSERT INTO account (type, outcome_id, owner_market_id)
+            VALUES ('outcome_shares', %s, %s)
+            RETURNING id;
             """,
-            (market_id,),
+            (outcome_id, market_id),
         )
-        result = cur.fetchone()
-        if result is not None:
-            return Points(result[0])
-        else:
-            return None
+        return MarketAccount(
+            id=account_id,
+            balance=OutcomeShares.zero(outcome_id),
+            market_id=market_id,
+        )
 
 
 def get_user_share_balance(

@@ -20,10 +20,16 @@ class Points(Amount):
     def __add__(self, other: Points) -> Points:
         return Points(self.amount + other.amount)
 
+    def __sub__(self, other: Points) -> Points:
+        return Points(self.amount - other.amount)
+
     def __radd__(self, other: int) -> Points:
         # This method is needed to support `sum`, which starts with int 0.
         assert other == 0
         return self
+
+    def __repr__(self) -> str:
+        return f"Points({self.amount})"
 
 
 @dataclass(frozen=True, order=True)
@@ -38,7 +44,14 @@ class OutcomeShares(Amount):
         assert self.outcome_id == other.outcome_id
         return OutcomeShares(self.amount + other.amount, self.outcome_id)
 
+    def __sub__(self, other: OutcomeShares) -> OutcomeShares:
+        assert self.outcome_id == other.outcome_id
+        return OutcomeShares(self.amount - other.amount, self.outcome_id)
+
     def __radd__(self, other: int) -> OutcomeShares:
         # This method is needed to support `sum`, which starts with int 0.
         assert other == 0
         return self
+
+    def __repr__(self) -> str:
+        return f"OutcomeShares[{self.outcome_id}]({self.amount})"

@@ -43,6 +43,7 @@ COMMENT ON TABLE "account" IS '
 
 CREATE TYPE transaction_type AS ENUM
   ( 'income'
+  , 'fund_market'
   , 'exchange_create_shares'
   , 'exchange_destroy_shares'
   , 'trade'

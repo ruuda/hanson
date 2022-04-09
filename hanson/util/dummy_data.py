@@ -10,7 +10,10 @@ from hanson.models.currency import Points
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
 from hanson.models.session import Session
-from hanson.models.transaction import create_transaction_income
+from hanson.models.transaction import (
+    create_transaction_income,
+    create_transaction_fund_market,
+)
 from hanson.models.user import User
 
 
@@ -52,6 +55,7 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         )
         Outcome.create_discrete(tx, market.id, "Yes", "#68a223")
         Outcome.create_discrete(tx, market.id, "No", "#a22a17")
+        create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
         market = Market.create(
@@ -69,6 +73,7 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         Outcome.create_discrete(tx, market.id, "Peanut butter", "#b58800")
         Outcome.create_discrete(tx, market.id, "Cheese", "#d2bb00")
         Outcome.create_discrete(tx, market.id, "Ham", "#d58b8b")
+        create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
         market = Market.create(
@@ -93,6 +98,7 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         Outcome.create_datetime(
             tx, market.id, "2024-06", "#0000ff", t.replace(year=2024)
         )
+        create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
         market = Market.create(
@@ -112,6 +118,7 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         Outcome.create_float(tx, market.id, "0.5", "#aa0022", 0.5)
         Outcome.create_float(tx, market.id, "1.0", "#2200aa", 1.0)
         Outcome.create_float(tx, market.id, "2.0", "#0000ff", 2.0)
+        create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
     return markets
@@ -129,6 +136,7 @@ def main() -> None:
 
         _sessions = add_sessions(tx, users)
         _markets = add_markets(tx, users)
+
         tx.commit()
 
 

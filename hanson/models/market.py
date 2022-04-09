@@ -74,7 +74,6 @@ class Market(NamedTuple):
 
     @staticmethod
     def list_all(tx: Transaction) -> Iterable[Market]:
-        result: Tuple[int, int, str, str, datetime]
         for result in tx.execute_fetch_all(
             """
             SELECT

@@ -2,11 +2,27 @@ from __future__ import annotations
 
 import contextlib
 import os
-from typing import Any, Dict, Iterator, Iterable, Optional, NamedTuple, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    Iterable,
+    Optional,
+    NamedTuple,
+    Tuple,
+    Union,
+    TypeVar,
+)
 
 import psycopg2.extensions  # type: ignore
 import psycopg2.extras  # type: ignore
 import psycopg2.pool  # type: ignore
+
+
+# If we return `Optional[Tuple[Any, ...]]` from functions that return a row,
+# then Mypy does not allow us to assign it to a specific tuple such as
+# `Tuple[int, str]`. But if we use a type var, it does allow this.
+Row = TypeVar("Row", bound=Tuple[Any, ...])
 
 
 class Transaction:
@@ -39,11 +55,11 @@ class Transaction:
         self,
         query: str,
         params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
-    ) -> Optional[Tuple[Any, ...]]:
+    ) -> Optional[Row]:
         """Execute a query and return the first result."""
         with self.cursor() as cur:
             cur.execute(query, params)
-            result: Optional[Tuple[Any, ...]] = cur.fetchone()
+            result: Optional[Row] = cur.fetchone()
             return result
 
     def execute_fetch_one(
@@ -64,7 +80,7 @@ class Transaction:
         params: Union[None, Tuple[Any, ...], Dict[str, Any]] = None,
     ) -> Any:
         """Execute a query and return the result, fail if there is no result."""
-        result = self.execute_fetch_one(query, params)
+        result: Tuple[Any, ...] = self.execute_fetch_one(query, params)
         assert len(result) == 1, "Expected a result with a single column."
         return result[0]
 

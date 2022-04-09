@@ -120,7 +120,6 @@ class User(NamedTuple):
 
     @staticmethod
     def list_all(tx: Transaction) -> Iterable[User]:
-        result: Tuple[int, str, str, datetime]
         for result in tx.execute_fetch_all(
             """
             SELECT

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, NamedTuple, Optional
+from typing import Dict, Iterable, List, NamedTuple, Optional, cast
 from collections import defaultdict
 
 from hanson.models.currency import Points, OutcomeShares
@@ -76,11 +76,19 @@ class Post(NamedTuple):
 
         entries.sort(key=lambda entry: entry.market_value)
 
+        # If `sum` sums over an empty range, it returns 0, so it may return int.
+        # In that case we convert to `Points` with `or`, but Mypy does not know
+        # that `sum` returns 0 if it returns an int at all, so cast here.
+        total_market_value = cast(
+            Points, sum(entry.market_value for entry in entries) or Points.zero()
+        )
+        max_value: Points = max(*(entry.max_value for entry in entries))
+
         return Post(
             name=market.title,
             href=f"/markets/{market_id}",
-            max_value=max(*(entry.max_value for entry in entries)),
-            market_value=sum(entry.market_value for entry in entries) or Points.zero(),
+            max_value=max_value,
+            market_value=total_market_value,
             entries=entries,
         )
 
@@ -112,12 +120,15 @@ class AssetReport(NamedTuple):
             Post.for_points(user_points_balance),
             *(
                 Post.for_market(tx, market_id, balances)
-                for market_id, balances in markets
+                for market_id, balances in markets.items()
             ),
         ]
 
+        # The `sum`s below sum over a non-empty list, and therefore they do not
+        # return `0: int`, they return `Points`. But Mypy does not know that, so
+        # use a cast here.
         return AssetReport(
-            market_value=sum(p.market_value for p in posts),
-            max_value=sum(p.max_value for p in posts),
+            market_value=cast(Points, sum(p.market_value for p in posts)),
+            max_value=cast(Points, sum(p.max_value for p in posts)),
             posts=posts,
         )

@@ -20,6 +20,9 @@ class Session(NamedTuple):
         Create a new session for the given user.
         """
         token = uuid4()
+        session_id: int
+        created_at: datetime
+        expires_at: datetime
         session_id, created_at, expires_at = tx.execute_fetch_one(
             """
             INSERT INTO "session" (user_id, token, expires_at)

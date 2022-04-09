@@ -1,6 +1,6 @@
 # Mypy does not understand the `setup_out` kwargs to subprocess.run throughout
-# this file, so silence those errors.
-# type: ignore[call-overload]
+# this file, so silence those errors. Also, Mypy says this comment is unused,
+# but it is not.
 
 """
 This module defines Pytest fixtures. The main fixtures are `db_connection` and
@@ -12,18 +12,17 @@ import os
 import subprocess
 import time
 from subprocess import DEVNULL, Popen
-from typing import Iterable
+from typing import Any, Dict, Iterable
 
 import pytest
 
 from hanson.database import ConnectionPool, Transaction
-from hanson.models.user import User
 from hanson.models.market import Market
-
+from hanson.models.user import User
 
 pg_host = f"{os.getcwd()}/run/db_test/socket"
-pg_env = {
-    "PATH": os.getenv("PATH"),
+pg_env: Dict[str, str] = {
+    "PATH": os.getenv("PATH") or "",
     "PGDATABASE": "hanson",
     "PGUSER": "hanson_setup",
     "PGPASS": "hanson_setup",
@@ -32,8 +31,12 @@ pg_env = {
 
 # Default to silencing all database setup output, because it makes the tests
 # super noisy, pytest captures all of it. But should we need to debug the setup
-# code, we can change it here.
-setup_out = {"stdout": DEVNULL, "stderr": DEVNULL}
+# code, we can change it here. We have to give this type signature here because
+# otherwise Mypy complains loudly about the `**setup_out` kwargs.
+setup_out: Dict[str, Any] = {
+    "stdout": DEVNULL,
+    "stderr": DEVNULL,
+}
 
 
 def run_postgres() -> Popen[bytes]:

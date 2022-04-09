@@ -111,11 +111,9 @@ class MarketAccount(Generic[Balance]):
     market_id: int
 
     @staticmethod
-    def ensure_points_account(tx: Transaction, market_id: int) -> MarketAccount[Points]:
-        """
-        Return the points account for the given market,
-        or create it if it doesn't yet exist.
-        """
+    def get_points_account(
+        tx: Transaction, market_id: int
+    ) -> Optional[MarketAccount[Points]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
             SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
@@ -130,6 +128,24 @@ class MarketAccount(Generic[Balance]):
                 balance=Points(result[1]),
                 market_id=market_id,
             )
+        else:
+            return None
+
+    @staticmethod
+    def expect_points_account(tx: Transaction, market_id: int) -> MarketAccount[Points]:
+        result = MarketAccount.get_points_account(tx, market_id)
+        assert result is not None
+        return result
+
+    @staticmethod
+    def ensure_points_account(tx: Transaction, market_id: int) -> MarketAccount[Points]:
+        """
+        Return the points account for the given market,
+        or create it if it doesn't yet exist.
+        """
+        result = MarketAccount.get_points_account(tx, market_id)
+        if result is not None:
+            return result
 
         account_id: int = tx.execute_fetch_scalar(
             """
@@ -145,13 +161,9 @@ class MarketAccount(Generic[Balance]):
         )
 
     @staticmethod
-    def ensure_pool_account(
+    def get_pool_account(
         tx: Transaction, market_id: int, outcome_id: int
-    ) -> MarketAccount[OutcomeShares]:
-        """
-        Return the outcome shares account for the given market (for use by the
-        market maker), or create it if it doesn't yet exist.
-        """
+    ) -> Optional[MarketAccount[OutcomeShares]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
             SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
@@ -168,6 +180,28 @@ class MarketAccount(Generic[Balance]):
                 balance=OutcomeShares(result[1], outcome_id),
                 market_id=market_id,
             )
+        else:
+            return None
+
+    @staticmethod
+    def expect_pool_account(
+        tx: Transaction, market_id: int, outcome_id: int
+    ) -> MarketAccount[OutcomeShares]:
+        result = MarketAccount.get_pool_account(tx, market_id, outcome_id)
+        assert result is not None
+        return result
+
+    @staticmethod
+    def ensure_pool_account(
+        tx: Transaction, market_id: int, outcome_id: int
+    ) -> MarketAccount[OutcomeShares]:
+        """
+        Return the outcome shares account for the given market (for use by the
+        market maker), or create it if it doesn't yet exist.
+        """
+        result = MarketAccount.get_pool_account(tx, market_id, outcome_id)
+        if result is not None:
+            return result
 
         account_id: int = tx.execute_fetch_scalar(
             """

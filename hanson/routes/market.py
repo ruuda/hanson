@@ -7,6 +7,7 @@ from hanson.models.outcome import Outcome
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
+from hanson.models.account import MarketAccount
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -53,6 +54,13 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
 
     outcomes = Outcome.get_all_by_market(tx, market_id)
 
+    # TODO: We might make a single query that gets the pool balances.
+    points_account = MarketAccount.expect_points_account(tx, market_id)
+    pool_accounts = [
+        MarketAccount.expect_pool_account(tx, market_id, outcome.id)
+        for outcome in outcomes.outcomes
+    ]
+
     # TODO: Add real probabilities.
     ps = [1 / n for n in range(1, 100)][: len(outcomes.outcomes)]
     total = sum(ps)
@@ -66,6 +74,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             author=author,
             outcomes=outcomes,
             probabilities=ps,
+            capitalization=points_account.balance,
             zip=zip,
         )
     )

@@ -27,7 +27,9 @@ let
   );
   ghc = pkgs.ghc.withPackages (ps: [
     ps.blaze-html
+    ps.hspec
     ps.postgresql-simple
+    ps.resource-pool
     ps.scotty
     ps.text
   ]);

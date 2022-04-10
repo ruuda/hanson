@@ -4,18 +4,19 @@
 module Main where
 
 import Control.Monad.IO.Class (liftIO)
-import Database.PostgreSQL.Simple (Only (..), connectPostgreSQL)
+import Database.PostgreSQL.Simple (Only (..))
 import Text.Blaze (Markup)
 import Data.Text (Text)
+import Database.PostgreSQL.Simple.Transaction (ReadWriteMode (..))
 
 import qualified Data.Default.Class as Default
-import qualified Data.Text as Text
-import qualified Database.PostgreSQL.Simple as Postgres
 import qualified Text.Blaze as Blaze
 import qualified Text.Blaze.Html.Renderer.Utf8 as BlazeUtf8
 import qualified Text.Blaze.Html5 as Html
 import qualified Text.Blaze.Html5.Attributes as Attr
 import qualified Web.Scotty as Scotty
+
+import qualified Hanson.Database as Db
 
 renderMarket :: Text -> Markup
 renderMarket title = Html.article $ do
@@ -29,12 +30,18 @@ serveHtml markup = do
 
 main :: IO ()
 main = do
-  conn <- connectPostgreSQL ""
+  pool <- Db.newConnectionPool
 
   Scotty.scottyOpts Default.def $ do
     Scotty.get "/market/:market_id" $ do
       marketId :: Int <- Scotty.param "market_id"
-      [Only (title :: Text)] <- liftIO $ Postgres.query conn "SELECT market_current_title(?);" (Only marketId)
+
+      title <- liftIO $ Db.withConnection pool $ \conn -> do
+        Db.withTransaction ReadOnly conn $ \tx -> do
+          [Only (title :: Text)] <- Db.query tx "SELECT market_current_title(?);" (Only marketId)
+          Db.commit tx
+          pure title
+
       serveHtml $ renderMarket $ title
       liftIO $ putStrLn $ "Hi from market."
   

@@ -13,15 +13,16 @@ import qualified Data.Default.Class as Default
 import qualified Text.Blaze as Blaze
 import qualified Text.Blaze.Html.Renderer.Utf8 as BlazeUtf8
 import qualified Text.Blaze.Html5 as Html
-import qualified Text.Blaze.Html5.Attributes as Attr
 import qualified Web.Scotty as Scotty
 
 import qualified Hanson.Database as Db
+import qualified Hanson.Html as Html
 
 renderMarket :: Text -> Markup
-renderMarket title = Html.article $ do
-  Html.h1 $ Blaze.text $ "Market " <> title
-  Html.p $ Blaze.text "This is a market."
+renderMarket title = Html.renderBase
+  ("Market " <> title)
+  (pure ())
+  (Html.p $ Blaze.text "This is a market.")
 
 serveHtml :: Markup -> Scotty.ActionM ()
 serveHtml markup = do
@@ -33,6 +34,10 @@ main = do
   pool <- Db.newConnectionPool
 
   Scotty.scottyOpts Default.def $ do
+    Scotty.get "/static/style.css" $ do
+      Scotty.setHeader "Content-Type" "text/css; charset=utf-8"
+      Scotty.file "hanson/static/style.css"
+
     Scotty.get "/market/:market_id" $ do
       marketId :: Int <- Scotty.param "market_id"
 

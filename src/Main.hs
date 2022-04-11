@@ -17,6 +17,7 @@ import qualified Web.Scotty as Scotty
 
 import qualified Hanson.Database as Db
 import qualified Hanson.Html as Html
+import qualified Hanson.Route.Session as RouteSession
 
 renderMarket :: Text -> Markup
 renderMarket title = Html.renderBase
@@ -34,6 +35,8 @@ main = do
   pool <- Db.newConnectionPool
 
   Scotty.scottyOpts Default.def $ do
+    RouteSession.routes
+
     Scotty.get "/static/style.css" $ do
       Scotty.setHeader "Content-Type" "text/css; charset=utf-8"
       Scotty.file "hanson/static/style.css"
@@ -49,4 +52,3 @@ main = do
 
       serveHtml $ renderMarket $ title
       liftIO $ putStrLn $ "Hi from market."
-  

@@ -2,6 +2,7 @@
 
 module Hanson.Html
  ( renderBase
+ , renderForAnonymousVisitor
  )
 where
 
@@ -39,3 +40,12 @@ renderBase title headerbar body =
         ! Attr.id "main"
         ! Attr.class_ "columns"
         $ body
+
+-- Render a page where the header bar does not contain any controls for the
+-- session user, only a link to the home page.
+renderForAnonymousVisitor :: Text -> Markup -> Markup
+renderForAnonymousVisitor title body = renderBase title headerbar body
+  where
+    headerbar =
+      Html.nav ! Attr.id "main-nav" $
+        Html.a ! Attr.href "/" ! Attr.id "home-link" $ Blaze.text "Hanson"

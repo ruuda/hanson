@@ -35,7 +35,7 @@ main = do
   pool <- Db.newConnectionPool
 
   Scotty.scottyOpts Default.def $ do
-    RouteSession.routes
+    RouteSession.routes pool
 
     Scotty.get "/static/style.css" $ do
       Scotty.setHeader "Content-Type" "text/css; charset=utf-8"
@@ -44,11 +44,10 @@ main = do
     Scotty.get "/market/:market_id" $ do
       marketId :: Int <- Scotty.param "market_id"
 
-      title <- liftIO $ Db.withConnection pool $ \conn -> do
-        Db.withTransaction ReadOnly conn $ \tx -> do
-          [Only (title :: Text)] <- Db.query tx "SELECT market_current_title(?);" (Only marketId)
-          Db.commit tx
-          pure title
+      title <- liftIO $ Db.withPoolTransaction ReadOnly pool $ \tx -> do
+        [Only (title :: Text)] <- Db.query tx "SELECT market_current_title(?);" (Only marketId)
+        Db.commit tx
+        pure title
 
       serveHtml $ renderMarket $ title
       liftIO $ putStrLn $ "Hi from market."

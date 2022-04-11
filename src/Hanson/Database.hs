@@ -2,9 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Hanson.Database
-  ( newConnectionPool
+  ( Transaction
+  , newConnectionPool
   , withConnection
   , withTransaction
+  , withPoolTransaction
   , commit
   , rollback
   , query
@@ -82,6 +84,12 @@ withTransaction readWriteMode conn f = bracket
   (begin readWriteMode conn)
   (ensureClosed)
   f
+
+-- Combines withTransaction and withConnection.
+withPoolTransaction :: ReadWriteMode -> Pool Connection -> (Transaction -> IO a) -> IO a
+withPoolTransaction readWriteMode pool f =
+  withConnection pool $ \conn ->
+    withTransaction readWriteMode conn f
 
 query
   :: (Postgres.ToRow q, Postgres.FromRow r)

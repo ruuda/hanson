@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, List, NamedTuple, Optional, cast
 from collections import defaultdict
 
-from hanson.models.currency import Points, OutcomeShares
+from hanson.models.currency import Points, Shares
 from hanson.database import Transaction
 from hanson.models.currency import Amount
 from hanson.models.account import UserAccount
@@ -47,7 +47,7 @@ class Post(NamedTuple):
 
     @staticmethod
     def for_market(
-        tx: Transaction, market_id: int, balances: List[OutcomeShares]
+        tx: Transaction, market_id: int, balances: List[Shares]
     ) -> Post:
         """
         Build the post for a particular market, that includes as entries all of
@@ -100,12 +100,12 @@ class AssetReport(NamedTuple):
 
     @staticmethod
     def get_for_user(tx: Transaction, user_id: int) -> AssetReport:
-        markets: Dict[int, List[OutcomeShares]] = defaultdict(lambda: [])
+        markets: Dict[int, List[Shares]] = defaultdict(lambda: [])
         user_points_balance: Points = Points.zero()
 
         # Gather the balance of outcome shares per market.
         for account in UserAccount.list_all_for_user(tx, user_id):
-            if isinstance(account.balance, OutcomeShares):
+            if isinstance(account.balance, Shares):
                 assert account.market_id is not None
                 markets[account.market_id].append(account.balance)
 

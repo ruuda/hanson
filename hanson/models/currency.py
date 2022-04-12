@@ -33,25 +33,25 @@ class Points(Amount):
 
 
 @dataclass(frozen=True, order=True)
-class OutcomeShares(Amount):
+class Shares(Amount):
     outcome_id: int
 
     @staticmethod
-    def zero(outcome_id: int) -> OutcomeShares:
-        return OutcomeShares(Decimal("0.00"), outcome_id)
+    def zero(outcome_id: int) -> Shares:
+        return Shares(Decimal("0.00"), outcome_id)
 
-    def __add__(self, other: OutcomeShares) -> OutcomeShares:
+    def __add__(self, other: Shares) -> Shares:
         assert self.outcome_id == other.outcome_id
-        return OutcomeShares(self.amount + other.amount, self.outcome_id)
+        return Shares(self.amount + other.amount, self.outcome_id)
 
-    def __sub__(self, other: OutcomeShares) -> OutcomeShares:
+    def __sub__(self, other: Shares) -> Shares:
         assert self.outcome_id == other.outcome_id
-        return OutcomeShares(self.amount - other.amount, self.outcome_id)
+        return Shares(self.amount - other.amount, self.outcome_id)
 
-    def __radd__(self, other: int) -> OutcomeShares:
+    def __radd__(self, other: int) -> Shares:
         # This method is needed to support `sum`, which starts with int 0.
         assert other == 0
         return self
 
     def __repr__(self) -> str:
-        return f"OutcomeShares[{self.outcome_id}]({self.amount})"
+        return f"Shares[{self.outcome_id}]({self.amount})"

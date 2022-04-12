@@ -5,7 +5,7 @@ from typing import Generic, Iterable, Optional, Tuple, TypeVar
 from dataclasses import dataclass
 
 from hanson.database import Transaction
-from hanson.models.currency import Amount, OutcomeShares, Points
+from hanson.models.currency import Amount, Shares, Points
 
 
 Balance = TypeVar("Balance", bound=Amount)
@@ -62,12 +62,12 @@ class UserAccount(Generic[Balance]):
                     balance=Points(balance),
                     market_id=None,
                 )
-            elif account_type == "outcome_shares":
+            elif account_type == "shares":
                 assert outcome_id is not None
                 assert market_id is not None
                 yield UserAccount(
                     id=id,
-                    balance=OutcomeShares(balance, outcome_id),
+                    balance=Shares(balance, outcome_id),
                     market_id=market_id,
                 )
             else:
@@ -163,12 +163,12 @@ class MarketAccount(Generic[Balance]):
     @staticmethod
     def get_pool_account(
         tx: Transaction, market_id: int, outcome_id: int
-    ) -> Optional[MarketAccount[OutcomeShares]]:
+    ) -> Optional[MarketAccount[Shares]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
             SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
               FROM account
-             WHERE type = 'outcome_shares'
+             WHERE type = 'shares'
                AND outcome_id = %s
                AND owner_market_id = %s
             """,
@@ -177,7 +177,7 @@ class MarketAccount(Generic[Balance]):
         if result is not None:
             return MarketAccount(
                 id=result[0],
-                balance=OutcomeShares(result[1], outcome_id),
+                balance=Shares(result[1], outcome_id),
                 market_id=market_id,
             )
         else:
@@ -186,7 +186,7 @@ class MarketAccount(Generic[Balance]):
     @staticmethod
     def expect_pool_account(
         tx: Transaction, market_id: int, outcome_id: int
-    ) -> MarketAccount[OutcomeShares]:
+    ) -> MarketAccount[Shares]:
         result = MarketAccount.get_pool_account(tx, market_id, outcome_id)
         assert result is not None
         return result
@@ -194,7 +194,7 @@ class MarketAccount(Generic[Balance]):
     @staticmethod
     def ensure_pool_account(
         tx: Transaction, market_id: int, outcome_id: int
-    ) -> MarketAccount[OutcomeShares]:
+    ) -> MarketAccount[Shares]:
         """
         Return the outcome shares account for the given market (for use by the
         market maker), or create it if it doesn't yet exist.
@@ -206,21 +206,21 @@ class MarketAccount(Generic[Balance]):
         account_id: int = tx.execute_fetch_scalar(
             """
             INSERT INTO account (type, outcome_id, owner_market_id)
-            VALUES ('outcome_shares', %s, %s)
+            VALUES ('shares', %s, %s)
             RETURNING id;
             """,
             (outcome_id, market_id),
         )
         return MarketAccount(
             id=account_id,
-            balance=OutcomeShares.zero(outcome_id),
+            balance=Shares.zero(outcome_id),
             market_id=market_id,
         )
 
 
 def get_user_share_balance(
     tx: Transaction, user_id: int, outcome_id: int
-) -> Optional[OutcomeShares]:
+) -> Optional[Shares]:
     with tx.cursor() as cur:
         cur.execute(
             """
@@ -231,20 +231,20 @@ def get_user_share_balance(
             WHERE
               owner_user_id = %s
               AND outcome_id = %s
-              AND type = 'outcome_shares'
+              AND type = 'shares'
             """,
             (user_id, outcome_id),
         )
         result = cur.fetchone()
         if result is not None:
-            return OutcomeShares(result[0], outcome_id)
+            return Shares(result[0], outcome_id)
         else:
             return None
 
 
 def get_market_share_balance(
     tx: Transaction, market_id: int, outcome_id: int
-) -> Optional[OutcomeShares]:
+) -> Optional[Shares]:
     with tx.cursor() as cur:
         cur.execute(
             """
@@ -255,12 +255,12 @@ def get_market_share_balance(
             WHERE
               owner_market_id = %s
               AND outcome_id = %s
-              AND type = 'outcome_shares'
+              AND type = 'shares'
             """,
             (market_id, outcome_id),
         )
         result = cur.fetchone()
         if result is not None:
-            return OutcomeShares(result[0], outcome_id)
+            return Shares(result[0], outcome_id)
         else:
             return None

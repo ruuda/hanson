@@ -1,0 +1,28 @@
+{% extends "base_session.html" %}
+
+{% block title %}Checkout — {{market.title}} — Hanson{% endblock %}
+
+{% block body %}
+<h1 class="main-left main-top">{{market.title}}</h1>
+<div class="main-left">
+  <table>
+    <tr>
+      <th>Outcome</th>
+      <th colspan="3">Probability</th>
+      <th>Cost</th>
+    </tr>
+    {% for outcome, p_before, p_after, cost in zip(outcomes.outcomes, ps_before, ps_after, costs) %}
+      <tr>
+        <td>{{outcome.name}}</td>
+        <td class="num">{{"{:.3f}".format(p_before)}}</td>
+        <td>→</td>
+        <td class="num">{{"{:.3f}".format(p_after)}}</td>
+        <td class="num">{{"{:.2f}".format(cost.amount)}}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <form id="order-form" action="/market/{{market.id}}/checkout" method="post">
+    <input type="submit" value="Confirm Order">
+  </form>
+</div>
+{% endblock %}

@@ -196,7 +196,9 @@ a#home-link {
   margin-right: auto;
 }
 
-#login-form form {
+#login-form form,
+form#order-form
+{
   display: grid;
   grid-template-columns: auto 1fr;
   grid-column-gap: 1rem;
@@ -207,7 +209,7 @@ a#home-link {
   padding: 2rem;
 }
 
-#login-form h1, #login-form input[type="submit"] {
+form input[type="submit"] {
   grid-column: 2;
 }
 

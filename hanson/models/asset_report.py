@@ -46,9 +46,7 @@ class Post(NamedTuple):
         )
 
     @staticmethod
-    def for_market(
-        tx: Transaction, market_id: int, balances: List[Shares]
-    ) -> Post:
+    def for_market(tx: Transaction, market_id: int, balances: List[Shares]) -> Post:
         """
         Build the post for a particular market, that includes as entries all of
         the outcomes for which the user has a non-zero balance.

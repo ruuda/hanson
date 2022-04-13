@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable, NamedTuple, Optional, Tuple
 from datetime import datetime
+from typing import Iterable, NamedTuple, Optional, Tuple
 
 from hanson.database import Transaction
 

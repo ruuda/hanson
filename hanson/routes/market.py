@@ -14,6 +14,7 @@ from hanson.models.outcome import Outcome
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
+from hanson.models.probability import ProbabilityDistribution
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -86,6 +87,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         )
     )
 
+
 @app.get("/market/<int:market_id>/checkout")
 @with_tx
 def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
@@ -98,10 +100,13 @@ def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
         return Response.not_found("This market does not exist.")
 
     try:
-        v = request.args.get("maxspend")
+        v = request.args.get("maxspend") or "0.00"
         max_spend = Points(Decimal(v))
     except:
         return Response.bad_request("Invalid maxspend amount.")
+
+    if max_spend <= Points.zero():
+        return Response.bad_request("Invalid maxspend amount, must be positive.")
 
     outcomes = Outcome.get_all_by_market(tx, market_id)
 
@@ -111,52 +116,35 @@ def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
         for outcome in outcomes.outcomes
     ]
 
-    # Probabilities are proportional to exp(-pool_balance) per share, for the
-    # logarithmic market scoring rule.
-    numers_before = [math.exp(-pool_account.balance.amount) for pool_account in pool_accounts]
-    denom_before = sum(numers_before)
-    ps_before = [x / denom_before for x in numers_before]
-
-    # Normalize the probabilities that the user put in, because nothing else
-    # guarantees that they sum to one.
-    numers_after = []
+    # Get the user's probabilities from the query parameters. There is nothing
+    # that forces the user to enter a normalized probability distribution, but
+    # we normalize it when we construct the `ProbabilityDistribution` later.
+    raw_user_probabilities = []
     for outcome in outcomes.outcomes:
-        v = request.args.get(f"outcome{outcome.id}")
+        v = request.args.get(f"outcome{outcome.id}") or "0.0"
         try:
-            numers_after.append(Decimal(v))
+            raw_user_probabilities.append(float(v))
         except:
-            numers_after.append(Decimal('0.00'))
+            raw_user_probabilities.append(1e-10)
 
-    denom_after = sum(numers_after)
-    ps_after = [x / denom_after for x in numers_after]
+    pd_before = ProbabilityDistribution.from_pool_balances(
+        [a.balance for a in pool_accounts]
+    )
+    pd_target = ProbabilityDistribution.from_probabilities(raw_user_probabilities)
+    costs = pd_before.cost_for_update(pd_target)
 
-    costs: List[Shares] = []
-    for outcome, p_before, p_after in zip(outcomes.outcomes, ps_before, ps_after):
-        # TODO: Take scaling factor into account.
-        reward_diff = Decimal.from_float(math.log(p_after) - math.log(p_before))
-        costs.append(Shares(reward_diff, outcome_id=outcome.id))
+    # The "costs" are the changes in the pool balances. But we assume the user
+    # right now doesn't have any shares. (TODO: Take current balance into account.)
+    # So any shares we want to put in the pool, we have to first create by
+    # exchanging points for shares.
+    cost = Points(max(*costs))
 
-    # We can't pay negative amounts, if we want to do that, we need to create
-    # outcome shares of all the other outcomes instead.
-    # TODO: Take current balance into account.
-    offset = -min(min([x.amount for x in costs]), Decimal('0.00'))
-    for i, outcome in enumerate(outcomes.outcomes):
-        costs[i] += Shares(offset, outcome_id=outcome.id)
-
-    total_cost = Points(sum(x.amount for x in costs))
-
-    # What if we can't move the probabilities as much as we want to? Then we
-    # need to reduce how much we spend. But that in turn will affect the new
-    # probabilities.
-    if total_cost > max_spend:
-        scale = max_spend.amount / total_cost.amount
-        for i, outcome in enumerate(outcomes.outcomes):
-            costs[i] = Shares(costs[i].amount * scale, outcome_id=outcome.id)
-            reward_diff = float(costs[i].amount - offset * scale)
-            p_before = ps_before[i]
-            # TODO: Work out the formula to make the probabilities normalized again.
-            p_after = math.exp(reward_diff + math.log(p_before))
-            ps_after[i] = Decimal.from_float(p_after)
+    pd_after = pd_target
+    if cost > max_spend:
+        t = max_spend.amount / cost.amount
+        pd_after = pd_before.interpolate(pd_target, t)
+        costs = pd_before.cost_for_update(pd_after)
+        cost = Points(max(*costs))
 
     return Response.ok_html(
         render_template(
@@ -164,9 +152,10 @@ def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
             session_user=session_user,
             market=market,
             outcomes=outcomes,
-            ps_before=ps_before,
-            ps_after=ps_after,
+            pd_before=pd_before,
+            pd_after=pd_after,
             costs=costs,
-            zip=zip
+            cost=cost,
+            zip=zip,
         )
     )

@@ -1,9 +1,9 @@
 {% extends "base_session.html" %}
 
-{% block title %}Checkout — {{market.title}} — Hanson{% endblock %}
+{% block title %}Checkout — {{order.market.title}} — Hanson{% endblock %}
 
 {% block body %}
-<h1 class="main-left main-top">{{market.title}}</h1>
+<h1 class="main-left main-top">{{order.market.title}}</h1>
 <div class="main-left">
   <table>
     <tr>
@@ -11,22 +11,31 @@
       <th colspan="3">Probability</th>
       <th>Net Change</th>
     </tr>
-    {% for outcome, p_before, p_after, change in zip(outcomes.outcomes, pd_before.ps(), pd_after.ps(), costs) %}
+    {% for outcome, p_before, p_after, change in zip(
+        order.outcomes.outcomes,
+        order.pd_before.ps(),
+        order.pd_after.ps(),
+        order.costs_shares,
+    ) %}
       <tr>
         <td>{{outcome.name}}</td>
         <td class="num">{{"{:.3f}".format(p_before)}}</td>
         <td>→</td>
         <td class="num">{{"{:.3f}".format(p_after)}}</td>
-        <td class="num">{{"{:.2f}".format(cost.amount - change)}}</td>
+        <td class="num">{{"{:.2f}".format(order.cost_points.amount - change)}}</td>
       </tr>
     {% endfor %}
     <tr>
       <th>Points</th>
       <th colspan="3"></th>
-      <th class="num">{{"{:.2f}".format(-cost.amount)}}</th>
+      <th class="num">{{"{:.2f}".format(-order.cost_points.amount)}}</th>
     </tr>
   </table>
-  <form id="order-form" action="/market/{{market.id}}/checkout" method="post">
+  <form id="order-form" action="/market/{{order.market.id}}/checkout" method="post">
+    {% for outcome, p_target in zip(order.outcomes.outcomes, order.pd_target.ps()) %}
+    <input type="hidden" name="outcome{{outcome.id}}" value="{{'{:.3f}'.format(p_target)}}">
+    {% endfor %}
+    <input type="hidden" name="max_spend" value="{{'{:.2f}'.format(order.max_spend.amount)}}">
     <input type="submit" value="Confirm Order">
   </form>
 </div>

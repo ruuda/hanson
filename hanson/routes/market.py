@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import math
 
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import List
 
@@ -10,7 +13,7 @@ from hanson.http import Response
 from hanson.models.currency import Points, Shares
 from hanson.models.account import MarketAccount
 from hanson.models.market import Market
-from hanson.models.outcome import Outcome
+from hanson.models.outcome import Outcome, Outcomes
 from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
@@ -88,74 +91,126 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     )
 
 
+@dataclass(frozen=True)
+class OrderDetails:
+    market: Market
+    outcomes: Outcomes
+    pd_before: ProbabilityDistribution
+    pd_after: ProbabilityDistribution
+    pd_target: ProbabilityDistribution
+    costs_shares: List[Decimal]
+    cost_points: Points
+    max_spend: Points
+
+    @staticmethod
+    def from_request(tx: Transaction, market_id: int) -> OrderDetails | Response:
+        """
+        Extract order details from the request (either through GET or POST),
+        correct the amounts if needed to normalize the distribution and to stay
+        below the max spend, then return
+        """
+        from flask import request
+
+        market = Market.get_by_id(tx, market_id)
+        if market is None:
+            return Response.not_found("This market does not exist.")
+
+        try:
+            v = request.args.get("max_spend") or request.form.get("max_spend") or "0.00"
+            max_spend = Points(Decimal(v))
+        except ValueError:
+            return Response.bad_request("Invalid max_spend amount.")
+
+        if max_spend <= Points.zero():
+            return Response.bad_request("Invalid max_spend amount, must be positive.")
+
+        outcomes = Outcome.get_all_by_market(tx, market_id)
+
+        pool_accounts = [
+            MarketAccount.expect_pool_account(tx, market_id, outcome.id)
+            for outcome in outcomes.outcomes
+        ]
+
+        # Get the user's probabilities from the query parameters. There is nothing
+        # that forces the user to enter a normalized probability distribution, but
+        # we normalize it when we construct the `ProbabilityDistribution` later.
+        raw_user_probabilities = []
+        for outcome in outcomes.outcomes:
+            k = f"outcome{outcome.id}"
+            v = request.args.get(k) or request.form.get(k) or "0.0"
+            try:
+                raw_user_probabilities.append(float(v))
+            except ValueError:
+                raw_user_probabilities.append(1e-10)
+
+        pd_before = ProbabilityDistribution.from_pool_balances(
+            [a.balance for a in pool_accounts]
+        )
+        pd_target = ProbabilityDistribution.from_probabilities(raw_user_probabilities)
+        costs = pd_before.cost_for_update(pd_target)
+
+        # The "costs" are the changes in the pool balances. But we assume the user
+        # right now doesn't have any shares. (TODO: Take current balance into account.)
+        # So any shares we want to put in the pool, we have to first create by
+        # exchanging points for shares.
+        cost = Points(max(*costs))
+
+        pd_after = pd_target
+        if cost > max_spend:
+            t = max_spend.amount / cost.amount
+            pd_after = pd_before.interpolate(pd_target, t)
+            costs = pd_before.cost_for_update(pd_after)
+            cost = Points(max(*costs))
+
+        return OrderDetails(
+            market=market,
+            outcomes=outcomes,
+            pd_before=pd_before,
+            pd_after=pd_after,
+            pd_target=pd_target,
+            costs_shares=costs,
+            cost_points=cost,
+            max_spend=max_spend,
+        )
+
+
 @app.get("/market/<int:market_id>/checkout")
 @with_tx
 def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
-    from flask import request
-
     session_user = get_session_user(tx)
 
-    market = Market.get_by_id(tx, market_id)
-    if market is None:
-        return Response.not_found("This market does not exist.")
+    order = OrderDetails.from_request(tx, market_id)
+    if isinstance(order, Response):
+        return order
 
-    try:
-        v = request.args.get("maxspend") or "0.00"
-        max_spend = Points(Decimal(v))
-    except:
-        return Response.bad_request("Invalid maxspend amount.")
-
-    if max_spend <= Points.zero():
-        return Response.bad_request("Invalid maxspend amount, must be positive.")
-
-    outcomes = Outcome.get_all_by_market(tx, market_id)
-
-    points_account = MarketAccount.expect_points_account(tx, market_id)
-    pool_accounts = [
-        MarketAccount.expect_pool_account(tx, market_id, outcome.id)
-        for outcome in outcomes.outcomes
-    ]
-
-    # Get the user's probabilities from the query parameters. There is nothing
-    # that forces the user to enter a normalized probability distribution, but
-    # we normalize it when we construct the `ProbabilityDistribution` later.
-    raw_user_probabilities = []
-    for outcome in outcomes.outcomes:
-        v = request.args.get(f"outcome{outcome.id}") or "0.0"
-        try:
-            raw_user_probabilities.append(float(v))
-        except:
-            raw_user_probabilities.append(1e-10)
-
-    pd_before = ProbabilityDistribution.from_pool_balances(
-        [a.balance for a in pool_accounts]
-    )
-    pd_target = ProbabilityDistribution.from_probabilities(raw_user_probabilities)
-    costs = pd_before.cost_for_update(pd_target)
-
-    # The "costs" are the changes in the pool balances. But we assume the user
-    # right now doesn't have any shares. (TODO: Take current balance into account.)
-    # So any shares we want to put in the pool, we have to first create by
-    # exchanging points for shares.
-    cost = Points(max(*costs))
-
-    pd_after = pd_target
-    if cost > max_spend:
-        t = max_spend.amount / cost.amount
-        pd_after = pd_before.interpolate(pd_target, t)
-        costs = pd_before.cost_for_update(pd_after)
-        cost = Points(max(*costs))
+    # TODO: Warn if the cost is more than the user's balance.
 
     return Response.ok_html(
         render_template(
             "market_checkout.html",
             session_user=session_user,
-            market=market,
-            outcomes=outcomes,
-            pd_before=pd_before,
-            pd_after=pd_after,
-            costs=costs,
-            cost=cost,
+            order=order,
+            zip=zip,
+        )
+    )
+
+
+@app.post("/market/<int:market_id>/checkout")
+@with_tx
+def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
+    session_user = get_session_user(tx)
+
+    order = OrderDetails.from_request(tx, market_id)
+    if isinstance(order, Response):
+        return order
+
+    # TODO: Warn if the cost is more than the user's balance.
+
+    return Response.ok_html(
+        render_template(
+            "market_checkout.html",
+            session_user=session_user,
+            order=order,
             zip=zip,
         )
     )

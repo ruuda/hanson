@@ -99,6 +99,81 @@ class UserAccount(Generic[Balance]):
         )
         return UserAccount(id=account_id, balance=Points.zero())
 
+    @staticmethod
+    def get_share_account(
+        tx: Transaction,
+        *,
+        user_id: int,
+        market_id: int,
+        outcome_id: int,
+    ) -> Optional[UserAccount[Shares]]:
+        result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
+            """
+            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
+              FROM account
+             WHERE type = 'shares'
+               AND outcome_id = %s
+               AND owner_user_id = %s
+            """,
+            (outcome_id, user_id),
+        )
+        if result is not None:
+            return UserAccount(
+                id=result[0],
+                balance=Shares(result[1], outcome_id),
+                market_id=market_id,
+            )
+        else:
+            return None
+
+    @staticmethod
+    def expect_share_account(
+        tx: Transaction, *, user_id: int, market_id: int, outcome_id: int
+    ) -> UserAccount[Shares]:
+        result = UserAccount.get_share_account(
+            tx,
+            user_id=user_id,
+            market_id=market_id,
+            outcome_id=outcome_id,
+        )
+        assert result is not None
+        return result
+
+    @staticmethod
+    def ensure_share_account(
+        tx: Transaction,
+        *,
+        user_id: int,
+        market_id: int,
+        outcome_id: int,
+    ) -> UserAccount[Shares]:
+        """
+        Return the outcome shares account for the given user, or create it if it
+        doesn't yet exist.
+        """
+        result = UserAccount.get_share_account(
+            tx,
+            user_id=user_id,
+            market_id=market_id,
+            outcome_id=outcome_id,
+        )
+        if result is not None:
+            return result
+
+        account_id: int = tx.execute_fetch_scalar(
+            """
+            INSERT INTO account (type, outcome_id, owner_user_id)
+            VALUES ('shares', %s, %s)
+            RETURNING id;
+            """,
+            (outcome_id, user_id),
+        )
+        return UserAccount(
+            id=account_id,
+            balance=Shares.zero(outcome_id),
+            market_id=market_id,
+        )
+
 
 @dataclass(frozen=True)
 class MarketAccount(Generic[Balance]):

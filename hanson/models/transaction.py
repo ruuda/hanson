@@ -67,6 +67,81 @@ def create_transaction_income(
     return transaction_id
 
 
+def create_mutation_transfer_user_market(
+    tx: Transaction,
+    *,
+    subtransaction_id: int,
+    user_account: UserAccount[Points],
+    market_account: MarketAccount[Points],
+    amount: Points,
+) -> int:
+    """
+    Move `amount` points from the user's account into the market's account.
+    Can also go the other way if `amount` is negative. Returns the mutation id.
+    """
+    if amount > Points.zero():
+        subtransaction_type = "exchange_create_shares"
+        credit_account_id = user_account.id
+        debit_account_id = market_account.id
+        amount_abs = amount
+    else:
+        subtransaction_type = "exchange_destroy_shares"
+        credit_account_id = market_account.id
+        debit_account_id = user_account.id
+        amount_abs = -amount
+
+    mutation_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "mutation"
+          ( subtransaction_id
+          , credit_account_id
+          , debit_account_id
+          , amount
+          )
+        VALUES (%s, %s, %s, %s)
+        RETURNING id;
+        """,
+        (
+            subtransaction_id,
+            credit_account_id,
+            debit_account_id,
+            amount_abs.amount,
+        ),
+    )
+    post_balances = list(
+        tx.execute_fetch_all(
+            """
+            INSERT INTO
+              "account_balance" (account_id, mutation_id, post_balance)
+            VALUES
+              ( %(user_account_id)s
+              , %(mutation_id)s
+              , COALESCE(account_current_balance(%(user_account_id)s), 0.00) - %(amount)s
+              ),
+              ( %(market_account_id)s
+              , %(mutation_id)s
+              , COALESCE(account_current_balance(%(market_account_id)s), 0.00) + %(amount)s
+              )
+            RETURNING
+              post_balance;
+            """,
+            {
+                "user_account_id": user_account.id,
+                "market_account_id": market_account.id,
+                "mutation_id": mutation_id,
+                "amount": amount.amount,
+            },
+        )
+    )
+    # We should only fund the market at initialization time, which means the
+    # pool accounts should now all contain `amount` of outcome shares.
+    # (We initialize to a uniform distribution.)
+    assert post_balances[0][0] == (user_account.balance - amount).amount
+    assert post_balances[1][0] == (market_account.balance + amount).amount
+
+    return mutation_id
+
+
 def create_transaction_fund_market(
     tx: Transaction,
     user_id: int,
@@ -106,54 +181,13 @@ def create_transaction_fund_market(
     )
 
     # Move the points from the user's account into the market's account.
-    mutation_id: int = tx.execute_fetch_scalar(
-        """
-        INSERT INTO "mutation"
-          ( subtransaction_id
-          , credit_account_id
-          , debit_account_id
-          , amount
-          )
-        VALUES (%s, %s, %s, %s)
-        RETURNING id;
-        """,
-        (
-            subtransaction_id,
-            user_points_account.id,
-            market_points_account.id,
-            amount.amount,
-        ),
+    create_mutation_transfer_user_market(
+        tx,
+        subtransaction_id=subtransaction_id,
+        user_account=user_points_account,
+        market_account=market_points_account,
+        amount=amount,
     )
-    post_balances = list(
-        tx.execute_fetch_all(
-            """
-            INSERT INTO
-              "account_balance" (account_id, mutation_id, post_balance)
-            VALUES
-              ( %(user_account_id)s
-              , %(mutation_id)s
-              , COALESCE(account_current_balance(%(user_account_id)s), 0.00) - %(amount)s
-              ),
-              ( %(market_account_id)s
-              , %(mutation_id)s
-              , COALESCE(account_current_balance(%(market_account_id)s), 0.00) + %(amount)s
-              )
-            RETURNING
-              post_balance;
-            """,
-            {
-                "user_account_id": user_points_account.id,
-                "market_account_id": market_points_account.id,
-                "mutation_id": mutation_id,
-                "amount": amount.amount,
-            },
-        )
-    )
-    # We should only fund the market at initialization time, which means the
-    # pool accounts should now all contain `amount` of outcome shares.
-    # (We initialize to a uniform distribution.)
-    assert post_balances[0][0] == (user_points_account.balance - amount).amount
-    assert post_balances[1][0] == amount.amount
 
     # Mint outcome shares in equal amounts, and put them in the pool.
     for outcome, pool_account in zip(outcomes, pool_accounts):
@@ -190,3 +224,70 @@ def create_transaction_fund_market(
         assert post_balance == amount.amount
 
     return transaction_id
+
+
+def create_subtransaction_exchange_points_to_shares(
+    tx: Transaction,
+    transaction_id: int,
+    user_id: int,
+    market_id: int,
+    amount: Points,
+) -> int:
+    """
+    Create a transaction that converts `amount` of the user's points into
+    outcome shares. The amount can be negative to convert shares back to points,
+    but it must not be zero.
+    """
+    assert (
+        amount != Points.zero()
+    ), "Please don't pollute the database with 0-point exchanges."
+    user_points_account = UserAccount.ensure_points_account(tx, user_id)
+    market_points_account = MarketAccount.ensure_points_account(tx, market_id)
+
+    assert (
+        user_points_account.balance - amount >= Points.zero()
+    ), "User cannot afford to buy so many shares."
+    assert (
+        market_points_account.balance + amount >= Points.zero()
+    ), "There shouldn’t be that many outstanding shares."
+
+    # TODO: Check that the user owns enough of every share.
+
+    outcomes = Outcome.get_all_by_market(tx, market_id).outcomes
+    share_accounts = [
+        UserAccount.ensure_share_account(
+            tx,
+            user_id=user_id,
+            market_id=market_id,
+            outcome_id=outcome.id,
+        )
+        for outcome in outcomes
+    ]
+
+    if amount > Points.zero():
+        subtransaction_type = "exchange_create_shares"
+    else:
+        subtransaction_type = "exchange_destroy_shares"
+
+    subtransaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "subtransaction" (type, transaction_id)
+        VALUES (%s, %s)
+        RETURNING id;
+        """,
+        (
+            subtransaction_type,
+            transaction_id,
+        ),
+    )
+
+    # Move the points from the user's account into the market's account.
+    create_mutation_transfer_user_market(
+        tx,
+        subtransaction_id=subtransaction_id,
+        user_account=user_points_account,
+        market_account=market_points_account,
+        amount=amount,
+    )
+
+    return subtransaction_id

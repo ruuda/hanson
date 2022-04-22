@@ -23,6 +23,9 @@ class Points(Amount):
     def __sub__(self, other: Points) -> Points:
         return Points(self.amount - other.amount)
 
+    def __neg__(self) -> Points:
+        return Points(-self.amount)
+
     def __radd__(self, other: int) -> Points:
         # This method is needed to support `sum`, which starts with int 0.
         assert other == 0
@@ -47,6 +50,9 @@ class Shares(Amount):
     def __sub__(self, other: Shares) -> Shares:
         assert self.outcome_id == other.outcome_id
         return Shares(self.amount - other.amount, self.outcome_id)
+
+    def __neg__(self) -> Shares:
+        return Shares(-self.amount, self.outcome_id)
 
     def __radd__(self, other: int) -> Shares:
         # This method is needed to support `sum`, which starts with int 0.

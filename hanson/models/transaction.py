@@ -5,7 +5,6 @@ from decimal import Decimal
 from hanson.database import Transaction
 from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.currency import Points
-from hanson.models.market import Market
 from hanson.models.outcome import Outcome
 
 
@@ -27,13 +26,22 @@ def create_transaction_income(
         """
     )
 
+    subtransaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "subtransaction" (type, transaction_id)
+        VALUES ('income', %s)
+        RETURNING id;
+        """,
+        (transaction_id,),
+    )
+
     mutation_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "mutation" (transaction_id, debit_account_id, amount)
+        INSERT INTO "mutation" (subtransaction_id, debit_account_id, amount)
         VALUES (%s, %s, %s)
         RETURNING id;
         """,
-        (transaction_id, account.id, amount.amount),
+        (subtransaction_id, account.id, amount.amount),
     )
 
     post_balance: Decimal = tx.execute_fetch_scalar(
@@ -88,11 +96,20 @@ def create_transaction_fund_market(
         """
     )
 
+    subtransaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "subtransaction" (type, transaction_id)
+        VALUES ('fund_market', %s)
+        RETURNING id;
+        """,
+        (transaction_id,),
+    )
+
     # Move the points from the user's account into the market's account.
     mutation_id: int = tx.execute_fetch_scalar(
         """
         INSERT INTO "mutation"
-          ( transaction_id
+          ( subtransaction_id
           , credit_account_id
           , debit_account_id
           , amount
@@ -101,7 +118,7 @@ def create_transaction_fund_market(
         RETURNING id;
         """,
         (
-            transaction_id,
+            subtransaction_id,
             user_points_account.id,
             market_points_account.id,
             amount.amount,
@@ -143,14 +160,14 @@ def create_transaction_fund_market(
         mutation_id = tx.execute_fetch_scalar(
             """
             INSERT INTO "mutation"
-              ( transaction_id
+              ( subtransaction_id
               , debit_account_id
               , amount
               )
             VALUES (%s, %s, %s)
             RETURNING id;
             """,
-            (transaction_id, pool_account.id, amount.amount),
+            (subtransaction_id, pool_account.id, amount.amount),
         )
         post_balance: Decimal = tx.execute_fetch_scalar(
             """

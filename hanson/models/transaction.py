@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Tuple
 
 from hanson.database import Transaction
 from hanson.models.account import MarketAccount, UserAccount
-from hanson.models.currency import Points
+from hanson.models.currency import Points, Shares
 from hanson.models.outcome import Outcome
 
 
@@ -142,6 +143,51 @@ def create_mutation_transfer_user_market(
     return mutation_id
 
 
+def create_mutation_mint_shares(
+    tx: Transaction,
+    *,
+    subtransaction_id: int,
+    debit_account_id: int,
+    amount: Shares,
+) -> Tuple[int, Shares]:
+    """
+    Create `amount` new outcome shares in the debit account. Returns the
+    mutation id and the post balance.
+    """
+    # TODO: Deal with negative amounts.
+    mutation_id = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "mutation"
+          ( subtransaction_id
+          , debit_account_id
+          , amount
+          )
+        VALUES (%s, %s, %s)
+        RETURNING id;
+        """,
+        (subtransaction_id, debit_account_id, amount.amount),
+    )
+    post_balance: Decimal = tx.execute_fetch_scalar(
+        """
+        INSERT INTO
+          "account_balance" (account_id, mutation_id, post_balance)
+        VALUES
+          ( %(pool_account_id)s
+          , %(mutation_id)s
+          , COALESCE(account_current_balance(%(debit_account_id)s), 0.00) + %(amount)s
+          )
+        RETURNING
+          post_balance;
+        """,
+        {
+            "debit_account_id": debit_account_id,
+            "mutation_id": mutation_id,
+            "amount": amount.amount,
+        },
+    )
+    return mutation_id, Shares(post_balance, amount.outcome_id)
+
+
 def create_transaction_fund_market(
     tx: Transaction,
     user_id: int,
@@ -191,37 +237,13 @@ def create_transaction_fund_market(
 
     # Mint outcome shares in equal amounts, and put them in the pool.
     for outcome, pool_account in zip(outcomes, pool_accounts):
-        mutation_id = tx.execute_fetch_scalar(
-            """
-            INSERT INTO "mutation"
-              ( subtransaction_id
-              , debit_account_id
-              , amount
-              )
-            VALUES (%s, %s, %s)
-            RETURNING id;
-            """,
-            (subtransaction_id, pool_account.id, amount.amount),
+        _mutation_id, post_balance = create_mutation_mint_shares(
+            tx,
+            subtransaction_id=subtransaction_id,
+            debit_account_id=pool_account.id,
+            amount=Shares(amount.amount, outcome.id),
         )
-        post_balance: Decimal = tx.execute_fetch_scalar(
-            """
-            INSERT INTO
-              "account_balance" (account_id, mutation_id, post_balance)
-            VALUES
-              ( %(pool_account_id)s
-              , %(mutation_id)s
-              , COALESCE(account_current_balance(%(pool_account_id)s), 0.00) + %(amount)s
-              )
-            RETURNING
-              post_balance;
-            """,
-            {
-                "pool_account_id": pool_account.id,
-                "mutation_id": mutation_id,
-                "amount": amount.amount,
-            },
-        )
-        assert post_balance == amount.amount
+        assert post_balance.amount == amount.amount
 
     return transaction_id
 
@@ -250,8 +272,6 @@ def create_subtransaction_exchange_points_to_shares(
     assert (
         market_points_account.balance + amount >= Points.zero()
     ), "There shouldn’t be that many outstanding shares."
-
-    # TODO: Check that the user owns enough of every share.
 
     outcomes = Outcome.get_all_by_market(tx, market_id).outcomes
     share_accounts = [
@@ -289,5 +309,17 @@ def create_subtransaction_exchange_points_to_shares(
         market_account=market_points_account,
         amount=amount,
     )
+
+    # Then put the new shares in the user's account.
+    for outcome, account in zip(outcomes, share_accounts):
+        mutation_id, post_balance = create_mutation_mint_shares(
+            tx,
+            subtransaction_id=subtransaction_id,
+            debit_account_id=account.id,
+            amount=Shares(amount.amount, outcome.id),
+        )
+        assert post_balance >= Shares.zero(
+            outcome.id
+        ), "User must have enough shares to be able to destroy them."
 
     return subtransaction_id

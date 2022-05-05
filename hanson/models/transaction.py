@@ -172,7 +172,7 @@ def create_mutation_mint_shares(
         INSERT INTO
           "account_balance" (account_id, mutation_id, post_balance)
         VALUES
-          ( %(pool_account_id)s
+          ( %(debit_account_id)s
           , %(mutation_id)s
           , COALESCE(account_current_balance(%(debit_account_id)s), 0.00) + %(amount)s
           )

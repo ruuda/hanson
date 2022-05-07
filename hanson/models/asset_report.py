@@ -84,7 +84,7 @@ class Post(NamedTuple):
 
         return Post(
             name=market.title,
-            href=f"/markets/{market_id}",
+            href=f"/market/{market_id}",
             max_value=max_value,
             market_value=total_market_value,
             entries=entries,

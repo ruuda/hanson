@@ -18,6 +18,7 @@ from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
 from hanson.models.probability import ProbabilityDistribution
+from hanson.models.transaction import create_transaction_execute_order
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -166,6 +167,13 @@ class OrderDetails:
         pd_target = ProbabilityDistribution.from_probabilities(raw_user_probabilities)
         costs = pd_before.cost_for_update(pd_target)
 
+        # Round the costs to two decimals, because points have only two decimals.
+        # Round the costs up, so what the user pays is maximum, and what the user
+        # receives (a negative cost) is minimum. This ensures that we avoid
+        # pathological cases where the user can make 0.01 point profit due to
+        # rounding, and repeat that to steal all the points.
+        costs = [math.ceil(x * 100) / Decimal('100.00') for x in costs]
+
         # The "costs" are the changes in the pool balances. But we assume the user
         # right now doesn't have any shares. (TODO: Take current balance into account.)
         # So any shares we want to put in the pool, we have to first create by
@@ -177,6 +185,7 @@ class OrderDetails:
             t = max_spend.amount / cost.amount
             pd_after = pd_before.interpolate(pd_target, t)
             costs = pd_before.cost_for_update(pd_after)
+            costs = [math.ceil(x * 100) / Decimal('100.00') for x in costs]
             cost = Points(max(*costs))
 
         return OrderDetails(
@@ -220,6 +229,19 @@ def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
     order = OrderDetails.from_request(tx, market_id)
     if isinstance(order, Response):
         return order
+
+    create_transaction_execute_order(
+        tx,
+        debit_user_id=session_user.id,
+        credit_market_id=market_id,
+        cost=order.cost_points,
+        amounts=[
+            Shares(cost, outcome_id=outcome.id)
+            for outcome, cost in zip(order.outcomes.outcomes, order.costs_shares)
+        ],
+    )
+
+    tx.commit()
 
     # TODO: Warn if the cost is more than the user's balance.
 

@@ -85,10 +85,12 @@ def create_mutation_transfer_user_market(
         credit_account_id = user_account.id
         debit_account_id = market_account.id
         amount_abs = amount.amount
-    else:
+    elif amount.amount < Decimal("0.00"):
         credit_account_id = market_account.id
         debit_account_id = user_account.id
         amount_abs = -amount.amount
+    else:
+        raise ValueError("Please do not pollute the database with 0-valued transfers.")
 
     mutation_id: int = tx.execute_fetch_scalar(
         """
@@ -136,7 +138,12 @@ def create_mutation_transfer_user_market(
     # We should only fund the market at initialization time, which means the
     # pool accounts should now all contain `amount` of outcome shares.
     # (We initialize to a uniform distribution.)
-    assert post_balances[0][0] == user_account.balance.amount - amount.amount
+    assert post_balances[0][0] == user_account.balance.amount - amount.amount, (
+        "Transfer does not balance! "
+        f"Post balance in database: {post_balances[0][0]}; "
+        f"User pre balance: {user_account.balance}; "
+        f"Amount: {amount}"
+    )
     assert post_balances[1][0] == market_account.balance.amount + amount.amount
 
     return mutation_id
@@ -348,6 +355,10 @@ def create_subtransaction_trade(
 
     for outcome, amount in zip(outcomes, amounts):
         assert amount.outcome_id == outcome.id
+
+        if amount.is_zero():
+            continue
+
         user_share_account = UserAccount.expect_share_account(
             tx,
             user_id=debit_user_id,
@@ -368,3 +379,35 @@ def create_subtransaction_trade(
         )
 
     return subtransaction_id
+
+
+def create_transaction_execute_order(
+    tx: Transaction,
+    debit_user_id: int,
+    credit_market_id: int,
+    cost: Points,
+    amounts: List[Shares],
+) -> int:
+    """
+    TODO
+    """
+    transaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "transaction" (type) VALUES ('trade') RETURNING id;
+        """
+    )
+    create_subtransaction_exchange_points_to_shares(
+        tx,
+        transaction_id=transaction_id,
+        user_id=debit_user_id,
+        market_id=credit_market_id,
+        amount=cost,
+    )
+    create_subtransaction_trade(
+        tx,
+        transaction_id=transaction_id,
+        debit_user_id=debit_user_id,
+        credit_market_id=credit_market_id,
+        amounts=amounts,
+    )
+    return transaction_id

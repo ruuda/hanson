@@ -8,6 +8,9 @@ from decimal import Decimal
 class Amount:
     amount: Decimal
 
+    def is_zero(self) -> bool:
+        return self.amount.is_zero()
+
     # TODO: Can I get Add and Sub required on here?
 
 

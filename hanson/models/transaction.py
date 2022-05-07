@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Tuple
+from typing import List, Tuple
 
+from hanson.models.account import Balance
 from hanson.database import Transaction
 from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.currency import Points, Shares
@@ -72,24 +73,22 @@ def create_mutation_transfer_user_market(
     tx: Transaction,
     *,
     subtransaction_id: int,
-    user_account: UserAccount[Points],
-    market_account: MarketAccount[Points],
-    amount: Points,
+    user_account: UserAccount[Balance],
+    market_account: MarketAccount[Balance],
+    amount: Balance,
 ) -> int:
     """
     Move `amount` points from the user's account into the market's account.
     Can also go the other way if `amount` is negative. Returns the mutation id.
     """
-    if amount > Points.zero():
-        subtransaction_type = "exchange_create_shares"
+    if amount.amount > Decimal("0.00"):
         credit_account_id = user_account.id
         debit_account_id = market_account.id
-        amount_abs = amount
+        amount_abs = amount.amount
     else:
-        subtransaction_type = "exchange_destroy_shares"
         credit_account_id = market_account.id
         debit_account_id = user_account.id
-        amount_abs = -amount
+        amount_abs = -amount.amount
 
     mutation_id: int = tx.execute_fetch_scalar(
         """
@@ -106,7 +105,7 @@ def create_mutation_transfer_user_market(
             subtransaction_id,
             credit_account_id,
             debit_account_id,
-            amount_abs.amount,
+            amount_abs,
         ),
     )
     post_balances = list(
@@ -137,8 +136,8 @@ def create_mutation_transfer_user_market(
     # We should only fund the market at initialization time, which means the
     # pool accounts should now all contain `amount` of outcome shares.
     # (We initialize to a uniform distribution.)
-    assert post_balances[0][0] == (user_account.balance - amount).amount
-    assert post_balances[1][0] == (market_account.balance + amount).amount
+    assert post_balances[0][0] == user_account.balance.amount - amount.amount
+    assert post_balances[1][0] == market_account.balance.amount + amount.amount
 
     return mutation_id
 
@@ -321,5 +320,51 @@ def create_subtransaction_exchange_points_to_shares(
         assert post_balance >= Shares.zero(
             outcome.id
         ), "User must have enough shares to be able to destroy them."
+
+    return subtransaction_id
+
+
+def create_subtransaction_trade(
+    tx: Transaction,
+    transaction_id: int,
+    debit_user_id: int,
+    credit_market_id: int,
+    amounts: List[Shares],
+) -> int:
+    """
+    Create a subtransaction where a user trades against the pool.
+    """
+    outcomes = Outcome.get_all_by_market(tx, credit_market_id).outcomes
+    assert len(outcomes) == len(amounts)
+
+    subtransaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "subtransaction" (type, transaction_id)
+        VALUES ('trade', %s)
+        RETURNING id;
+        """,
+        (transaction_id,),
+    )
+
+    for outcome, amount in zip(outcomes, amounts):
+        assert amount.outcome_id == outcome.id
+        user_share_account = UserAccount.expect_share_account(
+            tx,
+            user_id=debit_user_id,
+            market_id=credit_market_id,
+            outcome_id=outcome.id,
+        )
+        pool_share_account = MarketAccount.expect_pool_account(
+            tx,
+            market_id=credit_market_id,
+            outcome_id=outcome.id,
+        )
+        create_mutation_transfer_user_market(
+            tx,
+            subtransaction_id=subtransaction_id,
+            user_account=user_share_account,
+            market_account=pool_share_account,
+            amount=amount,
+        )
 
     return subtransaction_id

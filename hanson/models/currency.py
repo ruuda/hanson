@@ -8,6 +8,8 @@ from decimal import Decimal
 class Amount:
     amount: Decimal
 
+    # TODO: Can I get Add and Sub required on here?
+
 
 @dataclass(frozen=True, order=True)
 class Points(Amount):

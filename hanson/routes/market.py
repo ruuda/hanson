@@ -95,11 +95,28 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
 class OrderDetails:
     market: Market
     outcomes: Outcomes
+
+    # The probability distribution before executing the order.
     pd_before: ProbabilityDistribution
+
+    # The probability distribution after executing the order.
     pd_after: ProbabilityDistribution
+
+    # The target probability distribution, which may differ from `pd_after`
+    # when the user doesn't want to spend so many points to achieve `pd_after`.
     pd_target: ProbabilityDistribution
+
+    # The cost (to the user) of moving the probability distribution from
+    # `pd_before` to `pd_after`. To execute the order, the cost should be
+    # subtracted from the user's shares accounts, and added to the market's pool
+    # accounts. Note that the cost may be negative!
     costs_shares: List[Decimal]
+
+    # The number of points we need to exchange for outcome shares to be able to
+    # trade against the pool.
     cost_points: Points
+
+    # The maximum number of points that the user wanted to spend.
     max_spend: Points
 
     @staticmethod

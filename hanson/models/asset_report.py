@@ -69,6 +69,10 @@ class Post(NamedTuple):
         entries = []
         for share_balance, p in zip(balances, pd.ps()):
             outcome = market_outcomes[share_balance.outcome_id]
+
+            if share_balance.is_zero():
+                continue
+
             entries.append(
                 Entry(
                     name=outcome.name,
@@ -88,7 +92,7 @@ class Post(NamedTuple):
         total_market_value = cast(
             Points, sum(entry.market_value for entry in entries) or Points.zero()
         )
-        max_value: Points = max(*(entry.max_value for entry in entries))
+        max_value: Points = max(entry.max_value for entry in entries)
 
         return Post(
             name=market.title,

@@ -5,7 +5,7 @@
 {% block body %}
 <div class="main-full main-top">
   <h1>Assets</h1>
-  <table>
+  <table class="asset-report">
     <thead>
       <tr>
         <th>Asset</th>
@@ -16,11 +16,11 @@
     </thead>
     <tbody>
     {% for post in asset_report.posts %}
-      <tr>
-        <th>{% if post.href%}<a href="{{post.href}}">{{post.name}}</a>{% else %}{{post.name}}{% endif %}</th>
-        <th></th>
-        <th class="num">{{post.market_value.amount}}</th>
-        <th class="num">{{post.max_value.amount}}</th>
+      <tr class="post-header">
+        <td>{% if post.href%}<a href="{{post.href}}">{{post.name}}</a>{% else %}{{post.name}}{% endif %}</td>
+        <td></td>
+        <td class="num">{{post.market_value.amount}}</td>
+        <td class="num">{{post.max_value.amount}}</td>
       </tr>
       {% for entry in post.entries %}
       <tr>
@@ -33,7 +33,7 @@
     {% endfor %}
     </tbody>
     <tfoot>
-      <tr>
+      <tr class="post-header">
         <th>Total</th>
         <th></th>
         <th class="num">{{asset_report.market_value.amount}}</th>

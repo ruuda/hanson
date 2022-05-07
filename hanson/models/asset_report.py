@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List, NamedTuple, Optional, cast
 from collections import defaultdict
+from decimal import Decimal
 
 from hanson.models.currency import Points, Shares
 from hanson.database import Transaction
 from hanson.models.currency import Amount
-from hanson.models.account import UserAccount
+from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
+from hanson.models.probability import ProbabilityDistribution
 
 
 class Entry(NamedTuple):
@@ -58,17 +60,23 @@ class Post(NamedTuple):
             oc.id: oc for oc in Outcome.get_all_by_market(tx, market_id).outcomes
         }
 
+        pool_balances = [
+            MarketAccount.expect_pool_account(tx, market_id, outcome_id).balance
+            for outcome_id in market_outcomes.keys()
+        ]
+        pd = ProbabilityDistribution.from_pool_balances(pool_balances)
+
         entries = []
-        for share_balance in balances:
+        for share_balance, p in zip(balances, pd.ps()):
             outcome = market_outcomes[share_balance.outcome_id]
             entries.append(
                 Entry(
                     name=outcome.name,
                     amount_native=share_balance,
-                    # TODO: Compute the max value.
+                    # TODO: Take exchange rate into account.
                     max_value=Points(share_balance.amount),
-                    # TODO: Compute the market value.
-                    market_value=Points(share_balance.amount),
+                    # TODO: Take exchange rate into account.
+                    market_value=Points(share_balance.amount * Decimal(p)),
                 )
             )
 

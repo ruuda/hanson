@@ -19,15 +19,15 @@
       <tr class="post-header">
         <td>{% if post.href%}<a href="{{post.href}}">{{post.name}}</a>{% else %}{{post.name}}{% endif %}</td>
         <td></td>
-        <td class="num">{{post.market_value.amount}}</td>
-        <td class="num">{{post.max_value.amount}}</td>
+        <td class="num">{{"{:.2f}".format(post.market_value.amount)}}</td>
+        <td class="num">{{"{:.2f}".format(post.max_value.amount)}}</td>
       </tr>
       {% for entry in post.entries %}
       <tr>
         <td>{{entry.name}}</td>
-        <td class="num">{{entry.amount_native.amount}}</td>
-        <td class="num">{{entry.market_value.amount}}</td>
-        <td class="num">{{entry.max_value.amount}}</td>
+        <td class="num">{{"{:.2f}".format(entry.amount_native.amount)}}</td>
+        <td class="num">{{"{:.2f}".format(entry.market_value.amount)}}</td>
+        <td class="num">{{"{:.2f}".format(entry.max_value.amount)}}</td>
       </tr>
       {% endfor %}
     {% endfor %}
@@ -36,8 +36,8 @@
       <tr class="post-header">
         <th>Total</th>
         <th></th>
-        <th class="num">{{asset_report.market_value.amount}}</th>
-        <th class="num">{{asset_report.max_value.amount}}</th>
+        <th class="num">{{"{:.2f}".format(asset_report.market_value.amount)}}</th>
+        <th class="num">{{"{:.2f}".format(asset_report.max_value.amount)}}</th>
       </tr>
     </tfoot>
   </table>

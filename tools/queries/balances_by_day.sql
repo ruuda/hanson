@@ -2,10 +2,10 @@
 -- for producing a probability-over-time graph.
 select distinct on (
     bin_begin,
-    account_id
+    outcome_id
   )
   date_bin('1 hour', created_at, '2022-01-01T00:00:00+00:00') as bin_begin,
-  account_id,
+  outcome_id,
   post_balance as bin_end_balance
 from
   account_balance,
@@ -22,6 +22,6 @@ where
   and account.type = 'shares'
 order by
   bin_begin,
-  account_id,
+  outcome_id,
   -- Per bin, we want the balance of the latest mutation in that bin.
   mutation.id desc;

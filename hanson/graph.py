@@ -49,12 +49,13 @@ def render_graph(
 
         x = current_tick - start_tick
         start_y = 0
+        bar_width = 0.8
 
         for outcome, p in zip(outcomes, current_ps.ps()):
             height = p * axis_height
             result.append(
-                f'<rect x="{x - 0.5 - 0.4:.1f}" y="{start_y:.3f}" '
-                f'width="0.8" height="{height:.3f}" '
+                f'<rect x="{x - 0.5 - bar_width / 2:.2f}" y="{start_y:.3f}" '
+                f'width="{bar_width:.2f}" height="{height:.3f}" '
                 f'fill="{outcome.color}"></rect>'
             )
             start_y += p * axis_height

@@ -85,7 +85,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     ps_history = ProbabilityHistory.for_market(
         tx,
         market_id=market_id,
-        bin_size=timedelta(hours=48),
+        bin_size=timedelta(hours=24),
     )
     graph = render_graph(
         ps_history=ps_history,

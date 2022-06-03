@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List
 
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 
 from hanson.database import Transaction
 from hanson.http import Response
@@ -82,15 +82,65 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     denom = sum(numers)
     ps = [x / denom for x in numers]
 
+
+    graph_range = request.args.get("graph_range") or "90d"
+
+    if graph_range.endswith("d") and graph_range[:-1].isdigit():
+        num_days = int(graph_range[:-1])
+        graph_start_time = now - timedelta(days=num_days)
+
+    elif graph_range.endswith("h") and graph_range[:-1].isdigit():
+        num_hours = int(graph_range[:-1])
+        graph_start_time = now - timedelta(days=num_hours)
+
+    elif graph_range == "all":
+        graph_start_time = market.created_at
+
+    else:
+        return Response.bad_request(
+            "Invalid value for graph_range, must be 'all', days (e.g. '90d'), "
+            "or hours (e.g. '12h')."
+        )
+
+    graph_start_time = max(market.created_at, graph_start_time)
+    graph_duration = now - graph_start_time
+
+    # Some time intervals, in minutes, that are nice when the width of a bar on
+    # the bar chart is a multiple of them.
+    human_friendly_interval_minutes = (
+        1,
+        2,
+        5,
+        10,
+        15,
+        30,
+        60,
+        2 * 60,
+        3 * 60,
+        4 * 60,
+        6 * 60,
+        8 * 60,
+        12 * 60,
+    )
+    # I want at most 40 bars, so check which multiple of the time interval can
+    # fit the most of them. Fall back to a multiple of 1 day.
+    bin_size = timedelta(days=1 + graph_duration.total_seconds() // (3600 * 24 * 40) * (3600 * 24))
+
+    for bar_duration_minutes in human_friendly_interval_minutes:
+        num_bars = graph_duration.total_seconds() / (60 * bar_duration_minutes)
+        if num_bars < 42:
+            bin_size = timedelta(minutes=bar_duration_minutes)
+            break
+
     ps_history = ProbabilityHistory.for_market(
         tx,
         market_id=market_id,
-        bin_size=timedelta(hours=24),
+        bin_size=bin_size,
     )
     graph = render_graph(
         ps_history=ps_history,
         outcomes=outcomes.outcomes,
-        start_time=market.created_at,
+        start_time=graph_start_time,
         end_time=now,
     )
 

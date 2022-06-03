@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, NamedTuple, Tuple, Iterable, cast
 
@@ -73,14 +73,22 @@ class ProbabilityHistory(NamedTuple):
         tx: Transaction,
         *,
         market_id: int,
+        bin_size: timedelta,
     ) -> ProbabilityHistory:
+        """
+        Return the historical probabilities for a given market, sampled at
+        regular intervals.
+        """
         updates = tx.execute_fetch_all(
             """
             select distinct on (
-                bin_begin,
+                bin_end,
                 outcome_id
               )
-              date_bin('1 hour', created_at, '2022-01-01T00:00:00+00:00') as bin_begin,
+              -- date_bin rounds down, so we would group on the start time of
+              -- the bin, but we get the balance at the end of the bin, so we
+              -- should also return the end time of the bin.
+              date_bin(%(bin_size)s, created_at, '2022-01-01T00:00:00+00:00') + %(bin_size)s as bin_end,
               outcome_id,
               post_balance as bin_end_balance
             from
@@ -94,15 +102,18 @@ class ProbabilityHistory(NamedTuple):
               and account_balance.account_id = account.id
               and mutation.subtransaction_id = subtransaction.id
               and subtransaction.transaction_id = transaction.id
-              and account.owner_market_id = %s
+              and account.owner_market_id = %(market_id)s
               and account.type = 'shares'
             order by
-              bin_begin,
+              bin_end,
               outcome_id,
               -- Per bin, we want the balance of the latest mutation in that bin.
               mutation.id desc;
             """,
-            (market_id,)
+            {
+                "bin_size": bin_size,
+                "market_id": market_id,
+            },
         )
         updates_typed = cast(Iterable[Tuple[datetime, int, Decimal]], updates)
         return ProbabilityHistory.from_balance_updates(updates_typed)

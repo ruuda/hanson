@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 from typing import List
 
@@ -19,6 +20,7 @@ from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
 from hanson.models.probability import ProbabilityDistribution
 from hanson.models.transaction import create_transaction_execute_order
+from hanson.models.history import ProbabilityHistory
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -78,6 +80,12 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     denom = sum(numers)
     ps = [x / denom for x in numers]
 
+    ps_history = ProbabilityHistory.for_market(
+        tx,
+        market_id=market_id,
+        bin_size=timedelta(hours=1),
+    )
+
     return Response.ok_html(
         render_template(
             "market.html",
@@ -86,6 +94,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             author=author,
             outcomes=outcomes,
             probabilities=ps,
+            probability_history=ps_history,
             capitalization=points_account.balance,
             zip=zip,
         )

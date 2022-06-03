@@ -50,11 +50,17 @@ def fill_all_balances(
 class ProbabilityHistory(NamedTuple):
     """
     The probability distribution of a market at different points in time.
+
+    For the history, we divide time into bins. The time in the history list is
+    the end of the bin interval, and the probability distribution is the one at
+    the end of the bin time.
     """
+    bin_size: timedelta
     history: List[Tuple[datetime, ProbabilityDistribution]]
 
     @staticmethod
     def from_balance_updates(
+        bin_size: timedelta,
         updates: Iterable[Tuple[datetime, int, Decimal]],
     ) -> ProbabilityHistory:
         """
@@ -62,11 +68,14 @@ class ProbabilityHistory(NamedTuple):
         See also `fill_all_balances`. The elements of the probability
         distribution are ordered by ascending outcome id.
         """
-        return ProbabilityHistory([
-            (time, ProbabilityDistribution.from_pool_balances(balances))
-            for time, balances
-            in fill_all_balances(updates)
-        ])
+        return ProbabilityHistory(
+            bin_size,
+            [
+                (time, ProbabilityDistribution.from_pool_balances(balances))
+                for time, balances
+                in fill_all_balances(updates)
+            ],
+        )
 
     @staticmethod
     def for_market(
@@ -116,4 +125,4 @@ class ProbabilityHistory(NamedTuple):
             },
         )
         updates_typed = cast(Iterable[Tuple[datetime, int, Decimal]], updates)
-        return ProbabilityHistory.from_balance_updates(updates_typed)
+        return ProbabilityHistory.from_balance_updates(bin_size, updates_typed)

@@ -46,16 +46,7 @@
   </div>
 </aside>
 <div class="main-left">
-  <!-- TODO: Make a proper graph for this -->
-  <p>
-    {% for time, ps in probability_history.history %}
-    {{ time.isoformat(sep=' ', timespec='seconds') }}:
-      {% for p in ps.ps() %}
-        {{p * 100}}
-      {% endfor %}
-    <br>
-    {% endfor %}
-  </p>
+  {{graph | safe}}
   <p>{{market.description}}</p>
   <form id="order-form" action="/market/{{market.id}}/checkout" method="get">
     {% for outcome, p in zip(outcomes.outcomes, probabilities) %}

@@ -31,6 +31,6 @@ def get_session_user(tx: Transaction) -> SessionUser:
     user = User.get_by_id(tx, session.user_id)
     assert user is not None
 
-    points_account = UserAccount.get_points_account(tx, session.user_id)
+    points_account = UserAccount.expect_points_account(tx, session.user_id)
 
     return SessionUser(user, points_account.balance)

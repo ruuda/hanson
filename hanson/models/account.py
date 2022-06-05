@@ -92,6 +92,15 @@ class UserAccount(Generic[Balance]):
             return None
 
     @staticmethod
+    def expect_points_account(tx: Transaction, user_id: int) -> UserAccount[Points]:
+        """
+        Return the points account for the given user, failing if it does not exist.
+        """
+        result = UserAccount.get_points_account(tx, user_id)
+        assert result is not None
+        return result
+
+    @staticmethod
     def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount[Points]:
         """
         Return the points account for the given user,

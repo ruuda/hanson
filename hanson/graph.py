@@ -1,15 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Iterable
 
-from typing import List
-
-from hanson.models.probability import ProbabilityDistribution
 from hanson.models.history import ProbabilityHistory
 from hanson.models.outcome import Outcome
+
 
 def render_graph(
     *,
     ps_history: ProbabilityHistory,
-    outcomes: List[Outcome],
+    outcomes: Iterable[Outcome],
     start_time: datetime,
     end_time: datetime,
 ) -> str:
@@ -48,7 +47,7 @@ def render_graph(
             current_time, current_ps = ps_history.history[current_elem]
 
         x = current_tick - start_tick
-        start_y = 0
+        start_y = 0.0
         bar_width = 0.8
 
         for outcome, p in zip(outcomes, current_ps.ps()):

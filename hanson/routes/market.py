@@ -82,7 +82,6 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     denom = sum(numers)
     ps = [x / denom for x in numers]
 
-
     graph_range = request.args.get("graph_range") or "90d"
 
     if graph_range.endswith("d") and graph_range[:-1].isdigit():
@@ -124,7 +123,9 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     )
     # I want at most 40 bars, so check which multiple of the time interval can
     # fit the most of them. Fall back to a multiple of 1 day.
-    bin_size = timedelta(days=1 + graph_duration.total_seconds() // (3600 * 24 * 40) * (3600 * 24))
+    bin_size = timedelta(
+        days=1 + graph_duration.total_seconds() // (3600 * 24 * 40) * (3600 * 24)
+    )
 
     for bar_duration_minutes in human_friendly_interval_minutes:
         num_bars = graph_duration.total_seconds() / (60 * bar_duration_minutes)
@@ -239,7 +240,7 @@ class OrderDetails:
         # receives (a negative cost) is minimum. This ensures that we avoid
         # pathological cases where the user can make 0.01 point profit due to
         # rounding, and repeat that to steal all the points.
-        costs = [math.ceil(x * 100) / Decimal('100.00') for x in costs]
+        costs = [math.ceil(x * 100) / Decimal("100.00") for x in costs]
 
         # The "costs" are the changes in the pool balances. But we assume the user
         # right now doesn't have any shares. (TODO: Take current balance into account.)
@@ -252,7 +253,7 @@ class OrderDetails:
             t = max_spend.amount / cost.amount
             pd_after = pd_before.interpolate(pd_target, t)
             costs = pd_before.cost_for_update(pd_after)
-            costs = [math.ceil(x * 100) / Decimal('100.00') for x in costs]
+            costs = [math.ceil(x * 100) / Decimal("100.00") for x in costs]
             cost = Points(max(*costs))
 
         return OrderDetails(

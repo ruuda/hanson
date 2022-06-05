@@ -55,6 +55,7 @@ class ProbabilityHistory(NamedTuple):
     the end of the bin interval, and the probability distribution is the one at
     the end of the bin time.
     """
+
     bin_size: timedelta
     history: List[Tuple[datetime, ProbabilityDistribution]]
 
@@ -72,8 +73,7 @@ class ProbabilityHistory(NamedTuple):
             bin_size,
             [
                 (time, ProbabilityDistribution.from_pool_balances(balances))
-                for time, balances
-                in fill_all_balances(updates)
+                for time, balances in fill_all_balances(updates)
             ],
         )
 

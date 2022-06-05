@@ -74,7 +74,9 @@ class Market(NamedTuple):
         return Market(*result)
 
     @staticmethod
-    def list_all_with_capitalization(tx: Transaction) -> Iterable[Tuple[Market, Points]]:
+    def list_all_with_capitalization(
+        tx: Transaction,
+    ) -> Iterable[Tuple[Market, Points]]:
         for result in tx.execute_fetch_all(
             """
             SELECT

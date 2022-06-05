@@ -74,7 +74,9 @@ class UserAccount(Generic[Balance]):
                 raise Exception("Invalid account type.")
 
     @staticmethod
-    def get_points_account(tx: Transaction, user_id: int) -> Optional[UserAccount[Points]]:
+    def get_points_account(
+        tx: Transaction, user_id: int
+    ) -> Optional[UserAccount[Points]]:
         """
         Return the points account for the given user, if it exists.
         """

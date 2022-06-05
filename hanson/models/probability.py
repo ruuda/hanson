@@ -34,9 +34,13 @@ class ProbabilityDistribution(NamedTuple):
         Construct a probability distribution given the probabilities. They do
         not need to be normalized, we normalize them either way.
         """
-        offset = Decimal.from_float(math.log(sum(ps)))
+        # If we assigned zero probability to anything, the log below would fail.
+        # So limit extreme probabilities to 0.01%.
+        # TODO: Add test case for this.
+        ps_nonzero = [p if p > 0.0 else 0.0001 for p in ps]
+        offset = Decimal.from_float(math.log(sum(ps_nonzero)))
         return ProbabilityDistribution(
-            [Decimal.from_float(math.log(p)) - offset for p in ps]
+            [Decimal.from_float(math.log(p)) - offset for p in ps_nonzero]
         )
 
     def ps(self) -> List[float]:

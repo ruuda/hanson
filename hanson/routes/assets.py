@@ -13,7 +13,7 @@ app = Blueprint(name="assets", import_name=__name__)
 @with_tx
 def route_get_assets(tx: Transaction) -> Response:
     session_user = get_session_user(tx)
-    asset_report = AssetReport.get_for_user(tx, session_user.id)
+    asset_report = AssetReport.get_for_user(tx, session_user.user.id)
     return Response.ok_html(
         render_template(
             "assets.html",

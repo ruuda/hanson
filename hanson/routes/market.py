@@ -299,7 +299,7 @@ def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
 
     create_transaction_execute_order(
         tx,
-        debit_user_id=session_user.id,
+        debit_user_id=session_user.user.id,
         credit_market_id=market_id,
         cost=order.cost_points,
         amounts=[
@@ -308,15 +308,8 @@ def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
         ],
     )
 
+    # TODO: Warn if the cost is more than the user's balance.
     tx.commit()
 
-    # TODO: Warn if the cost is more than the user's balance.
-
-    return Response.ok_html(
-        render_template(
-            "market_checkout.html",
-            session_user=session_user,
-            order=order,
-            zip=zip,
-        )
-    )
+    # TODO: Include some kind of "your purchase was successful screen.
+    return Response.redirect_see_other(f"/market/{market_id}")

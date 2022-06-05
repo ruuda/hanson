@@ -74,10 +74,9 @@ class UserAccount(Generic[Balance]):
                 raise Exception("Invalid account type.")
 
     @staticmethod
-    def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount[Points]:
+    def get_points_account(tx: Transaction, user_id: int) -> Optional[UserAccount[Points]]:
         """
-        Return the points account for the given user,
-        or create it if it doesn't yet exist.
+        Return the points account for the given user, if it exists.
         """
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
@@ -89,6 +88,19 @@ class UserAccount(Generic[Balance]):
         )
         if result is not None:
             return UserAccount(id=result[0], balance=Points(result[1]))
+        else:
+            return None
+
+    @staticmethod
+    def ensure_points_account(tx: Transaction, user_id: int) -> UserAccount[Points]:
+        """
+        Return the points account for the given user,
+        or create it if it doesn't yet exist.
+        """
+        result = UserAccount.get_points_account(tx, user_id)
+
+        if result is not None:
+            return result
 
         account_id: int = tx.execute_fetch_scalar(
             """

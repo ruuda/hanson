@@ -5,15 +5,16 @@
   <a href="/" id="home-link">Hanson</a>
   <a href="/markets">Markets</a>
   <a href="/users">Users</a>
+  <a href="/assets">ℙ {{session_user.points_balance.amount}}</a>
 </nav>
 <div id="session-indicator">
   <details>
     <summary>
-      <span>{{session_user.full_name}}</span>
+      <span>{{session_user.user.full_name}}</span>
       <span class="caret"></span>
     </summary>
     <nav>
-      <a href="/user/{{session_user.username}}">Profile</a>
+      <a href="/user/{{session_user.user.username}}">Profile</a>
       <a href="/assets">Assets</a>
       <a href="/transactions">Transactions</a>
       <a href="/settings">Settings</a>

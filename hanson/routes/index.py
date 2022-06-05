@@ -16,7 +16,7 @@ def route_get_index(tx: Transaction) -> Response:
     return Response.ok_html(
         render_template(
             "index.html",
-            name=session_user.username,
+            name=session_user.user.username,
             session_user=session_user,
         )
     )

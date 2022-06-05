@@ -30,12 +30,12 @@ app = Blueprint(name="market", import_name=__name__)
 @with_tx
 def route_get_markets(tx: Transaction) -> Response:
     session_user = get_session_user(tx)
-    markets = Market.list_all(tx)
+    markets_with_caps = Market.list_all_with_capitalization(tx)
     return Response.ok_html(
         render_template(
             "market_index.html",
             session_user=session_user,
-            markets=markets,
+            markets_with_caps=markets_with_caps,
         )
     )
 

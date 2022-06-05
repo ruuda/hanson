@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Iterable, NamedTuple, Optional, Tuple
 
 from hanson.database import Transaction
+from hanson.models.currency import Points
 
 
 class Market(NamedTuple):
@@ -73,7 +74,7 @@ class Market(NamedTuple):
         return Market(*result)
 
     @staticmethod
-    def list_all(tx: Transaction) -> Iterable[Market]:
+    def list_all_with_capitalization(tx: Transaction) -> Iterable[Tuple[Market, Points]]:
         for result in tx.execute_fetch_all(
             """
             SELECT
@@ -81,13 +82,21 @@ class Market(NamedTuple):
               author_user_id,
               market_current_title(id),
               market_current_description(id),
-              created_at
+              created_at,
+              (
+                SELECT COALESCE(account_current_balance(account.id), 0.00)
+                FROM   account
+                WHERE  type = 'points' AND owner_market_id = market.id
+              ) as capitalization
             FROM
               "market"
+            ORDER BY
+              capitalization DESC;
             """,
         ):
             # We promise the type system that no field is none, but the title
             # and description are not enforced by the database to not be null:
             # there could be no rows (which would be a bug).
             assert all(field is not None for field in result)
-            yield Market(*result)
+            capitalization = Points(result[-1])
+            yield Market(*result[:-1]), capitalization

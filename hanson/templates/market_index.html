@@ -4,8 +4,8 @@
 
 {% block body %}
 <ul class="main-left main-top">
-{% for market in markets %}
-  <li><a href="/market/{{market.id}}">{{market.title}}</a></li>
+{% for market, cap in markets_with_caps %}
+  <li><span class="num">{{cap.amount}} points</span>&emsp;<a href="/market/{{market.id}}">{{market.title}}</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

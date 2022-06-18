@@ -23,15 +23,17 @@ from hanson.models.probability import ProbabilityDistribution
 class Entry(NamedTuple):
     name: str
     amount_native: Amount
-    max_value: Points
     market_value: Points
+    most_likely_value: Points
+    max_value: Points
 
 
 class Post(NamedTuple):
     name: str
     href: Optional[str]
-    max_value: Points
     market_value: Points
+    most_likely_value: Points
+    max_value: Points
     entries: List[Entry]
 
     @staticmethod
@@ -42,14 +44,16 @@ class Post(NamedTuple):
         return Post(
             name="Points",
             href=None,
-            max_value=balance,
             market_value=balance,
+            most_likely_value=balance,
+            max_value=balance,
             entries=[
                 Entry(
                     name="Points",
                     amount_native=balance,
-                    max_value=balance,
                     market_value=balance,
+                    most_likely_value=balance,
+                    max_value=balance,
                 )
             ],
         )
@@ -72,26 +76,34 @@ class Post(NamedTuple):
             for outcome_id in market_outcomes.keys()
         ]
         pd = ProbabilityDistribution.from_pool_balances(pool_balances)
+        max_p_index = pd.most_likely_index()
+        max_p_value = Points.zero()
 
         entries = []
-        for share_balance, p in zip(balances, pd.ps()):
+        for i, (share_balance, p) in enumerate(zip(balances, pd.ps())):
+            assert share_balance.outcome_id == pool_balances[i].outcome_id
             outcome = market_outcomes[share_balance.outcome_id]
 
             if share_balance.is_zero():
                 continue
+
+            if i == max_p_index:
+                # TODO: Take exchange rate into account.
+                max_p_value = Points(share_balance.amount)
 
             entries.append(
                 Entry(
                     name=outcome.name,
                     amount_native=share_balance,
                     # TODO: Take exchange rate into account.
-                    max_value=Points(share_balance.amount),
-                    # TODO: Take exchange rate into account.
                     market_value=Points(share_balance.amount * Decimal(p)),
+                    most_likely_value=max_p_value if i == max_p_index else Points.zero(),
+                    # TODO: Take exchange rate into account.
+                    max_value=Points(share_balance.amount),
                 )
             )
 
-        entries.sort(key=lambda entry: entry.market_value)
+        entries.sort(key=lambda entry: entry.market_value, reverse=True)
 
         # If `sum` sums over an empty range, it returns 0, so it may return int.
         # In that case we convert to `Points` with `or`, but Mypy does not know
@@ -104,14 +116,16 @@ class Post(NamedTuple):
         return Post(
             name=market.title,
             href=f"/market/{market_id}",
-            max_value=max_value,
             market_value=total_market_value,
+            most_likely_value=max_p_value,
+            max_value=max_value,
             entries=entries,
         )
 
 
 class AssetReport(NamedTuple):
     market_value: Points
+    most_likely_value: Points
     max_value: Points
     posts: List[Post]
 
@@ -146,6 +160,7 @@ class AssetReport(NamedTuple):
         # use a cast here.
         return AssetReport(
             market_value=cast(Points, sum(p.market_value for p in posts)),
+            most_likely_value=cast(Points, sum(p.most_likely_value for p in posts)),
             max_value=cast(Points, sum(p.max_value for p in posts)),
             posts=posts,
         )

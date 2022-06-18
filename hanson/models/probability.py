@@ -87,5 +87,12 @@ class ProbabilityDistribution(NamedTuple):
         assert len(self.logits) == len(other.logits)
         return [x - y for x, y in zip(self.logits, other.logits)]
 
+    def most_likely_index(self) -> int:
+        """
+        Return the index of the outcome with the greatest probability.
+        """
+        max_p, index = max(zip(self.logits, range(len(self.logits))))
+        return index
+
     def __repr__(self) -> str:
         return "[" + " ".join(f"{x:.4f}" for x in self.ps()) + "]"

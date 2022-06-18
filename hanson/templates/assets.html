@@ -11,6 +11,7 @@
         <th>Asset</th>
         <th>Amount</th>
         <th>Market value (pt)</th>
+        <th>Most likely value (pt)</th>
         <th>Max value (pt)</th>
       </tr>
     </thead>
@@ -21,6 +22,7 @@
         <td><a href="{{post.href}}">{{post.name}}</a></td>
         <td></td>
         <td class="num">{{"{:.2f}".format(post.market_value.amount)}}</td>
+        <td class="num">{{"{:.2f}".format(post.most_likely_value.amount)}}</td>
         <td class="num">{{"{:.2f}".format(post.max_value.amount)}}</td>
       </tr>
       {% endif %}
@@ -29,6 +31,7 @@
         <td>{{entry.name}}</td>
         <td class="num">{{"{:.2f}".format(entry.amount_native.amount)}}</td>
         <td class="num">{{"{:.2f}".format(entry.market_value.amount)}}</td>
+        <td class="num">{{"{:.2f}".format(entry.most_likely_value.amount)}}</td>
         <td class="num">{{"{:.2f}".format(entry.max_value.amount)}}</td>
       </tr>
       {% endfor %}
@@ -39,6 +42,7 @@
         <th>Total</th>
         <th></th>
         <th class="num">{{"{:.2f}".format(asset_report.market_value.amount)}}</th>
+        <th class="num">{{"{:.2f}".format(asset_report.most_likely_value.amount)}}</th>
         <th class="num">{{"{:.2f}".format(asset_report.max_value.amount)}}</th>
       </tr>
     </tfoot>

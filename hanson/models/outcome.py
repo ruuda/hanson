@@ -100,6 +100,8 @@ class Outcome:
               "outcome"
             WHERE
               market_id = %s
+            ORDER BY
+              id
             """,
             (market_id,),
         ):

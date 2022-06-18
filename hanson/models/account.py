@@ -57,7 +57,8 @@ class UserAccount(Generic[Balance]):
             WHERE
               owner_user_id = %s
             ORDER BY
-              outcome.market_id NULLS FIRST
+              outcome.market_id NULLS FIRST,
+              account.outcome_id
             """,
             (user_id,),
         ):

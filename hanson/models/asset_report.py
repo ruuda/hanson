@@ -155,6 +155,11 @@ class AssetReport(NamedTuple):
             ),
         ]
 
+        # Order markets in the report from most-invested to least-invested,
+        # but put the "points" entry first either way. We can identify that
+        # entry because it doesn't have a href.
+        posts.sort(key=lambda p: (p.href == None, p.market_value, ), reverse=True)
+
         # The `sum`s below sum over a non-empty list, and therefore they do not
         # return `0: int`, they return `Points`. But Mypy does not know that, so
         # use a cast here.

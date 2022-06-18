@@ -31,7 +31,12 @@
         <td>{{entry.name}}</td>
         <td class="num">{{"{:.2f}".format(entry.amount_native.amount)}}</td>
         <td class="num">{{"{:.2f}".format(entry.market_value.amount)}}</td>
-        <td class="num">{{"{:.2f}".format(entry.most_likely_value.amount)}}</td>
+        <td class="num">{%
+          if not entry.most_likely_value.is_zero()
+          %}{{"{:.2f}".format(entry.most_likely_value.amount)}}{%
+          else %}—{%
+          endif
+          %}</td>
         <td class="num">{{"{:.2f}".format(entry.max_value.amount)}}</td>
       </tr>
       {% endfor %}

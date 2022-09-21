@@ -92,8 +92,12 @@ a {
   color: #36d;
 }
 
-p {
+p, figcaption {
   margin-bottom: 1.7rem;
+}
+
+figcaption {
+  color: #eee;
 }
 
 input, label {

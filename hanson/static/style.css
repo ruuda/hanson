@@ -308,3 +308,13 @@ table tr.post-header th,
 table tr.post-header td {
   padding-top: 1.42rem;
 }
+
+.market-list {
+  display: table;
+}
+.market-list li {
+  display: table-row;
+}
+.market-list .num, market-list .a {
+  display: table-cell;
+}

@@ -3,9 +3,9 @@
 {% block title %}Markets — Hanson{% endblock %}
 
 {% block body %}
-<ul class="main-left main-top">
+<ul class="main-left main-top market-list">
 {% for market, cap in markets_with_caps %}
-  <li><span class="num">{{cap.amount}} points</span>&emsp;<a href="/market/{{market.id}}">{{market.title}}</a></li>
+  <li><span class="num">{{cap.amount}}</span>&emsp;<a href="/market/{{market.id}}">{{market.title}}</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

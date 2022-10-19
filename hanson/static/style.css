@@ -318,3 +318,12 @@ table tr.post-header td {
 .market-list .num, market-list .a {
   display: table-cell;
 }
+
+figure svg {
+  overflow: visible;
+}
+
+figure svg text {
+  /* "1px" in the graph is the width of one time step. */
+  font-size: 0.5px;
+}

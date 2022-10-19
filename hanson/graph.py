@@ -5,11 +5,23 @@
 # you may not use this file except in compliance with the License.
 # A copy of the License has been included in the root of the repository.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable
 
 from hanson.models.history import ProbabilityHistory
 from hanson.models.outcome import Outcome
+
+
+def tick_label(bin_size_secs: int, t: datetime) -> str:
+    assert t.tzinfo is not None
+    t = t.astimezone(timezone.utc)
+
+    if bin_size_secs <= 3600 * 3:
+        return t.strftime("%H:%M")
+    elif bin_size_secs < 3600 * 24 * 3:
+        return t.strftime("%b %d %H:%M")
+    else:
+        return t.strftime("%Y-%m-%d")
 
 
 def render_graph(
@@ -29,10 +41,11 @@ def render_graph(
 
     aspect_ratio = 21 / 9
     axis_height = num_ticks / aspect_ratio
+    graph_height = axis_height + 2.0
 
     result = []
     result.append(
-        f"""<svg version="1.1" xmlns="xmlns="http://www.w3.org/2000/svg" width="100%" height="16em" viewbox="0 0 {num_ticks} {axis_height:.3f}">"""
+        f"""<svg version="1.1" xmlns="xmlns="http://www.w3.org/2000/svg" width="100%" height="18em" viewbox="0 0 {num_ticks} {graph_height:.3f}">"""
     )
 
     prev_x = 0
@@ -41,6 +54,7 @@ def render_graph(
     current_tick = end_tick
     current_time = end_time
     current_elem = len(ps_history.history) - 1
+    n_until_tick = 0
 
     while current_tick > start_tick:
         current_time, current_ps = ps_history.history[current_elem]
@@ -65,6 +79,23 @@ def render_graph(
                 f'fill="{outcome.color}"></rect>'
             )
             start_y += p * axis_height
+
+        if n_until_tick == 0:
+            label = tick_label(
+                bin_size_secs=bin_size_secs,
+                t=datetime.fromtimestamp(current_tick * bin_size_secs, tz=timezone.utc),
+            )
+            result.append(
+                f'<circle cx="{x - 0.5:.2f}" '
+                f'cy="{axis_height + 0.4:.2f}" '
+                f'r="0.1"></circle>'
+                f'<text x="{x - 0.5:.2f}" '
+                f'y="{axis_height + 1.2:.2f}" '
+                f'text-anchor="middle">{label}</text>'
+            )
+            n_until_tick = 8
+        else:
+            n_until_tick -= 1
 
         current_tick -= 1
 

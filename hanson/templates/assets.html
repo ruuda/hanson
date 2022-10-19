@@ -3,7 +3,7 @@
 {% block title %}Assets — Hanson{% endblock %}
 
 {% block body %}
-<div class="main-full main-top">
+<div class="main-full main-top main-end">
   <h1>Assets</h1>
   <table class="asset-report">
     <thead>
@@ -21,9 +21,9 @@
       <tr class="post-header">
         <td><a href="{{post.href}}">{{post.name}}</a></td>
         <td></td>
-        <td class="num">{{"{:.2f}".format(post.market_value.amount)}}</td>
-        <td class="num">{{"{:.2f}".format(post.most_likely_value.amount)}}</td>
-        <td class="num">{{"{:.2f}".format(post.max_value.amount)}}</td>
+        <td class="num highlight">{{"{:.2f}".format(post.market_value.amount)}}</td>
+        <td class="num highlight">{{"{:.2f}".format(post.most_likely_value.amount)}}</td>
+        <td class="num highlight">{{"{:.2f}".format(post.max_value.amount)}}</td>
       </tr>
       {% endif %}
       {% for entry in post.entries %}
@@ -31,10 +31,10 @@
         <td>{{entry.name}}</td>
         <td class="num">{{"{:.2f}".format(entry.amount_native.amount)}}</td>
         <td class="num">{{"{:.2f}".format(entry.market_value.amount)}}</td>
-        <td class="num">{%
+        <td class="num{%
           if not entry.most_likely_value.is_zero()
-          %}{{"{:.2f}".format(entry.most_likely_value.amount)}}{%
-          else %}—{%
+          %}">{{"{:.2f}".format(entry.most_likely_value.amount)}}{%
+          else %} zero">—{%
           endif
           %}</td>
         <td class="num">{{"{:.2f}".format(entry.max_value.amount)}}</td>

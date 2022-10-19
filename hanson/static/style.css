@@ -225,6 +225,10 @@ form input[type="submit"] {
   margin-top: 4rem;
 }
 
+#main .main-end {
+  margin-bottom: 4rem;
+}
+
 #main .main-left {
   grid-column: 2 / 4;
   padding-right: 4rem;
@@ -275,10 +279,24 @@ table.properties td {
 
 table.asset-report th {
   text-align: left;
+  font-weight: 800;
 }
 
 table.asset-report th.num {
   text-align: right;
+}
+
+table.asset-report td.num {
+  color: #555;
+}
+
+table.asset-report td.zero {
+  color: #ccc;
+}
+
+table.asset-report td.highlight {
+  font-weight: 600;
+  color: #000;
 }
 
 table.asset-report th,

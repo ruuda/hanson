@@ -97,7 +97,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
 
     elif graph_range.endswith("h") and graph_range[:-1].isdigit():
         num_hours = int(graph_range[:-1])
-        graph_start_time = now - timedelta(days=num_hours)
+        graph_start_time = now - timedelta(hours=num_hours)
 
     elif graph_range == "all":
         graph_start_time = market.created_at

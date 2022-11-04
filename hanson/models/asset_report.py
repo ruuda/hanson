@@ -97,7 +97,9 @@ class Post(NamedTuple):
                     amount_native=share_balance,
                     # TODO: Take exchange rate into account.
                     market_value=Points(share_balance.amount * Decimal(p)),
-                    most_likely_value=max_p_value if i == max_p_index else Points.zero(),
+                    most_likely_value=max_p_value
+                    if i == max_p_index
+                    else Points.zero(),
                     # TODO: Take exchange rate into account.
                     max_value=Points(share_balance.amount),
                 )
@@ -158,7 +160,13 @@ class AssetReport(NamedTuple):
         # Order markets in the report from most-invested to least-invested,
         # but put the "points" entry first either way. We can identify that
         # entry because it doesn't have a href.
-        posts.sort(key=lambda p: (p.href == None, p.market_value, ), reverse=True)
+        posts.sort(
+            key=lambda p: (
+                p.href == None,
+                p.market_value,
+            ),
+            reverse=True,
+        )
 
         # The `sum`s below sum over a non-empty list, and therefore they do not
         # return `0: int`, they return `Points`. But Mypy does not know that, so

@@ -8,83 +8,78 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Iterable, NamedTuple, Optional
+from typing import Iterable, List, NamedTuple, Optional
 
 from hanson.models.history import ProbabilityHistory
 from hanson.models.outcome import Outcome
 
 
 class TickFormat(NamedTuple):
-    timetuple_index: str
-    timetuple_multiple: int
     format: str
+    origin: datetime
 
     @staticmethod
-    def time_axis_ticks(start_time: datetime, end_time: datetime) -> TickFormat:
+    def time_axis_ticks(x_coords: List[datetime]) -> TickFormat:
         """
         Return suitable ticks for a given time range.
         """
-        assert start_time.tzinfo is not None
-        assert end_time.tzinfo is not None
+        assert all(t.tzinfo is not None for t in x_coords)
 
-        y0, m0, d0, hh0, mm0, *_ = start_time.utctimetuple()
-        y1, m1, d1, hh1, mm1, *_ = end_time.utctimetuple()
+        # For the formatting of the labels, choose enough resolution to
+        # make all ticks unambiguous, i.e. avoid duplicate labels in the range.
+        ys, mds, hhmms = set(), set(), set()
+
+        for t in x_coords:
+            y, m, d, hh, mm, *_ = t.utctimetuple()
+            ys.add(y)
+            mds.add((m, d))
+            hhmms.add((hh, mm))
+
+        format_parts = []
+
+        if len(ys) > 1:
+            format_parts.append("%Y")
+
+        if len(mds) > 1:
+            format_parts.append("%b %d")
+
+        if len(hhmms) > 1:
+            format_parts.append("%H:%M")
+
+        # Then aside from the labels, we have to choose where to place the
+        # ticks. For now we space them every 4 bars, which means the only thing
+        # we get to choose is the origin, the location of one tick. We choose
+        # to align it based on the duration of the interval to either 10 minutes,
+        # hours, days, the first day of the month, or the first day of the year.
+        start_time = min(x_coords)
+        end_time = max(x_coords)
         duration = end_time - start_time
+        end_y, end_m, end_d, end_hh, end_mm, *_ = end_time.utctimetuple()
 
-        format_parts = ["", "", "%H:%M"]
-        index = "hours"
-        multiple = 1
+        origin = datetime(end_y, end_m, end_d, end_hh, end_mm // 10 * 10, 0, tzinfo=timezone.utc)
 
-        if d1 > d0 or m1 > m0:
-            format_parts[1] = "%b %d"
+        if duration > timedelta(hours=4):
+            origin = datetime(end_y, end_m, end_d, end_hh, 0, 0, tzinfo=timezone.utc)
 
-        if y1 > y0:
-            format_parts[0] = "%Y"
+        if duration > timedelta(hours=11):
+            origin = datetime(end_y, end_m, end_d, 0, 0, 0, tzinfo=timezone.utc)
 
-        if duration > timedelta(hours=12):
-            multiple = 8
+        if duration > timedelta(days=13):
+            origin = datetime(end_y, end_m, 1, 0, 0, 0, tzinfo=timezone.utc)
 
-        if duration > timedelta(days=7):
-            index = "days"
-            format_parts[2] = ""
-            multiple = 2
-
-        if duration > timedelta(days=14):
-            multiple = 5
-
-        if duration > timedelta(days=30):
-            multiple = 15
-
-        if duration > timedelta(days=60):
-            index = "months"
-            multiple = 1
+        if duration > timedelta(days=90):
+            origin = datetime(end_y, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
         return TickFormat(
-            index,
-            multiple,
             " ".join(p for p in format_parts if p != ""),
+            origin
         )
 
-    def get_tick(self, t: datetime) -> Optional[str]:
+    def get_label(self, t: datetime) -> str:
         """
         Format a tick, if we should tick at this particular time.
         """
         assert t.tzinfo is not None
-
-        y, m, d, h, *_ = t.utctimetuple()
-
-        if self.timetuple_index == "hours":
-            if h % self.timetuple_multiple > 0:
-                return None
-
-        elif self.timetuple_index == "days":
-            if (d - 1) % self.timetuple_multiple > 0:
-                return None
-
-        elif self.timetuple_index == "months":
-            if d > 1:
-                return None
-
         return t.strftime(self.format)
 
 
@@ -119,7 +114,9 @@ def render_graph(
     current_time = end_time
     current_elem = len(ps_history.history) - 1
 
-    tick_format = TickFormat.time_axis_ticks(start_time, end_time)
+    time_ticks = [t for t, ps in ps_history.history]
+    tick_format = TickFormat.time_axis_ticks(time_ticks)
+    origin_tick = tick_format.origin.timestamp() // bin_size_secs
 
     while current_tick > start_tick:
         current_time, current_ps = ps_history.history[current_elem]
@@ -146,8 +143,8 @@ def render_graph(
             start_y += p * axis_height
 
         t = datetime.fromtimestamp(current_tick * bin_size_secs, tz=timezone.utc)
-        tick_label = tick_format.get_tick(t)
-        if tick_label is not None:
+        if (current_tick - origin_tick) % 4 == 0:
+            tick_label = tick_format.get_label(t)
             result.append(
                 f'<circle cx="{x - 0.5:.2f}" '
                 f'cy="{axis_height + 0.4:.2f}" '

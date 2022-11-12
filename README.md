@@ -42,7 +42,7 @@ in the test fixture, so this does not depend on any daemon to be running.
 
 [prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
 [nix]:               https://nixos.org/
-[nix-2.11]:          https://releases.nixos.org/?prefix=nix/nix-2.11/
+[nix-2.11]:          https://releases.nixos.org/?prefix=nix/nix-2.11.0/
 
 ## To do
 

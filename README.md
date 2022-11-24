@@ -47,6 +47,10 @@ in the test fixture, so this does not depend on any daemon to be running.
 ## To do
 
  * Add a vacuum daemon because autovacuum doesn’t run on insert-only tables.
+ * Add the ability to freeze a market, to prevent insider trading by the people
+   who have control over the resolution.
+ * Add a way for anybody to contribute an outcome (in the case of categorical
+   outcomes), so markets can be used somewhat like open-answer polls.
 
 ## License
 

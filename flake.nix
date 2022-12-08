@@ -9,9 +9,6 @@
   outputs = { self, nixpkgs, utils }: 
   utils.lib.eachDefaultSystem (system:
     let
-      name = "noblit";
-      version = "0.0.0";
-
       pkgs = import nixpkgs { inherit system; };
 
       runtimeDependencies = ps: [

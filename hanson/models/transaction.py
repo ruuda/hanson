@@ -167,19 +167,35 @@ def create_mutation_mint_shares(
     Create `amount` new outcome shares in the debit account. Returns the
     mutation id and the post balance.
     """
-    # TODO: Deal with negative amounts.
-    mutation_id = tx.execute_fetch_scalar(
-        """
-        INSERT INTO "mutation"
-          ( subtransaction_id
-          , debit_account_id
-          , amount
-          )
-        VALUES (%s, %s, %s)
-        RETURNING id;
-        """,
-        (subtransaction_id, debit_account_id, amount.amount),
-    )
+    # Due to the canonical representation constraint, we have to distinguish
+    # positive and negative mutations here.
+    if amount.amount > 0:
+        mutation_id = tx.execute_fetch_scalar(
+            """
+            INSERT INTO "mutation"
+              ( subtransaction_id
+              , debit_account_id
+              , amount
+              )
+            VALUES (%s, %s, %s)
+            RETURNING id;
+            """,
+            (subtransaction_id, debit_account_id, amount.amount),
+        )
+    else:
+        mutation_id = tx.execute_fetch_scalar(
+            """
+            INSERT INTO "mutation"
+              ( subtransaction_id
+              , credit_account_id
+              , amount
+              )
+            VALUES (%s, %s, %s)
+            RETURNING id;
+            """,
+            (subtransaction_id, debit_account_id, -amount.amount),
+        )
+
     post_balance: Decimal = tx.execute_fetch_scalar(
         """
         INSERT INTO
@@ -416,5 +432,31 @@ def create_transaction_execute_order(
         debit_user_id=debit_user_id,
         credit_market_id=credit_market_id,
         amounts=amounts,
+    )
+    return transaction_id
+
+
+def create_transaction_annihilate(
+    tx: Transaction,
+    user_id: int,
+    market_id: int,
+    amount: Points,
+) -> int:
+    """
+    Create an 'annihilate' transaction that annihilates outcome shares and turns
+    them back into points. `amount` is subtracted from the balance of every
+    share account, and added to the balance of the user's points account.
+    """
+    transaction_id: int = tx.execute_fetch_scalar(
+        """
+        INSERT INTO "transaction" (type) VALUES ('annihilate') RETURNING id;
+        """
+    )
+    create_subtransaction_exchange_points_to_shares(
+        tx,
+        transaction_id=transaction_id,
+        user_id=user_id,
+        market_id=market_id,
+        amount=-amount,
     )
     return transaction_id

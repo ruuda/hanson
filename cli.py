@@ -16,9 +16,6 @@ import click
 from decimal import Decimal
 
 from hanson.database import connect_default
-from hanson.models.user import User
-from hanson.models.transaction import create_transaction_income
-from hanson.models.currency import Points
 
 
 @click.group()
@@ -29,17 +26,77 @@ def main() -> None:
 @main.command()
 @click.argument("points_per_user", required=True, type=Decimal)
 def airdrop(points_per_user: Decimal) -> None:
+    """
+    Create points out of thin air for every user.
+    """
+    from hanson.models.currency import Points
+    from hanson.models.transaction import create_transaction_income
+    from hanson.models.user import User
+
     amount = Points(points_per_user)
 
     conn = connect_default()
     with conn.begin() as tx:
         for user in User.list_all(tx):
-            transaction_id = create_transaction_income(
+            _transaction_id = create_transaction_income(
                 tx,
                 user_id=user.id,
                 amount=amount,
             )
             print(f"{user.username}: +{amount.amount} points")
+
+        tx.commit()
+
+
+@main.command()
+def annihilate() -> None:
+    """
+    Ensure no users own shares in all outcomes of a market.
+
+    If users have outcome shares in every possible outcome of a market, then
+    effectively they have points, so destroy the excess outcome shares, and
+    convert them back to points.
+
+    This functionality exists only to recover from a bad state introduced by
+    bugs; users should never end up with excess shares to begin with.
+    """
+    from hanson.models.account import UserAccount
+    from hanson.models.currency import Points, Shares
+    from hanson.models.transaction import create_transaction_annihilate
+    from hanson.models.user import User
+    from hanson.models.outcome import Outcome
+
+    conn = connect_default()
+    with conn.begin() as tx:
+        for user in User.list_all(tx):
+            print(f"{user.username}:")
+            accounts = list(UserAccount.list_all_for_user(tx, user.id))
+            markets = {account.market_id for account in accounts if account.market_id is not None}
+            balance_by_outcome = {
+                account.balance.outcome_id: account.balance
+                for account in accounts
+                if isinstance(account.balance, Shares)
+            }
+
+            for market_id in markets:
+                outcomes = Outcome.get_all_by_market(tx, market_id).outcomes
+                balances = [
+                    balance_by_outcome.get(outcome.id, Shares.zero(outcome.id))
+                    for outcome in outcomes
+                ]
+                min_balance = min(balances)
+                print(f"  {market_id=} {min_balance=}", end="")
+
+                if min_balance.is_zero():
+                    print()
+                else:
+                    transaction_id = create_transaction_annihilate(
+                        tx,
+                        user_id=user.id,
+                        market_id=market_id,
+                        amount=Points(min_balance.amount),
+                    )
+                    print(f" -> annihilated in transaction {transaction_id}")
 
         tx.commit()
 

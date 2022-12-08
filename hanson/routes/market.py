@@ -198,7 +198,7 @@ class OrderDetails:
         """
         Extract order details from the request (either through GET or POST),
         correct the amounts if needed to normalize the distribution and to stay
-        below the max spend, then return
+        below the max spend, then return the details, or an error.
         """
         from flask import request
 

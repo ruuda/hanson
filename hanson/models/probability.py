@@ -77,7 +77,7 @@ class ProbabilityDistribution(NamedTuple):
     def cost_for_update(self, other: ProbabilityDistribution) -> List[Decimal]:
         """
         Return the change required in each outcome share pool balance, to update
-        from `sel` to `other`. This assumes that the reward for outcome i if it
+        from `self` to `other`. This assumes that the reward for outcome i if it
         is the true outcome, is -log(ps[i]).
 
         The units of the returned values are in shares, but this method does not

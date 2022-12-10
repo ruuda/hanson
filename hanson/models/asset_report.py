@@ -30,6 +30,8 @@ class Entry(NamedTuple):
 
 class Post(NamedTuple):
     name: str
+    # Rendered into an id="" tag in html, so we can link to it.
+    id: Optional[str]
     href: Optional[str]
     market_value: Points
     most_likely_value: Points
@@ -43,6 +45,7 @@ class Post(NamedTuple):
         """
         return Post(
             name="Points",
+            id=None,
             href=None,
             market_value=balance,
             most_likely_value=balance,
@@ -117,6 +120,7 @@ class Post(NamedTuple):
 
         return Post(
             name=market.title,
+            id=f"market-{market_id}",
             href=f"/market/{market_id}",
             market_value=total_market_value,
             most_likely_value=max_p_value,

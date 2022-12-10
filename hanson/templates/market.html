@@ -50,7 +50,7 @@
       </tr>
       {% endfor %}
     </table>
-    <h2>Your portfolio</h2>
+    <h2><a href="/assets#market-{{market.id}}">Your portfolio</a></h2>
     {% if user_share_accounts | length > 0 %}
     <table class="properties">
       {% for outcome in outcomes.outcomes %}

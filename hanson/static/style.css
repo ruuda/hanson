@@ -272,6 +272,10 @@ table.properties td {
   margin-top: 1.42rem;
 }
 
+.aside-content h2 a {
+  color: inherit;
+}
+
 .distribution {
   margin-top: 0.2rem;
   display: grid;

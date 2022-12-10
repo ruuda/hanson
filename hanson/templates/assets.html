@@ -18,7 +18,7 @@
     <tbody>
     {% for post in asset_report.posts %}
       {% if post.href %}
-      <tr class="post-header">
+      <tr class="post-header" id="{{post.id}}">
         <td><a href="{{post.href}}">{{post.name}}</a></td>
         <td></td>
         <td class="num highlight">{{"{:.2f}".format(post.market_value.amount)}}</td>

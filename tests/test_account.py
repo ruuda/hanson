@@ -73,6 +73,9 @@ def test_mutation_mint_shares_handles_negative_numbers(
         tx, user_id=user.id, market_id=market.id, outcome_id=o2.id
     )
     balance_pt = UserAccount.get_points_account(tx, user_id=user.id)
+    assert balance_o1 is not None
+    assert balance_o2 is not None
+    assert balance_pt is not None
     assert balance_o1.balance.amount == Decimal("1.00")
     assert balance_o2.balance.amount == Decimal("1.00")
     assert balance_pt.balance.amount == Decimal("0.00")
@@ -92,6 +95,9 @@ def test_mutation_mint_shares_handles_negative_numbers(
         tx, user_id=user.id, market_id=market.id, outcome_id=o2.id
     )
     balance_pt = UserAccount.get_points_account(tx, user_id=user.id)
+    assert balance_o1 is not None
+    assert balance_o2 is not None
+    assert balance_pt is not None
     assert balance_o1.balance.amount == Decimal("0.00")
     assert balance_o2.balance.amount == Decimal("0.00")
     assert balance_pt.balance.amount == Decimal("1.00")

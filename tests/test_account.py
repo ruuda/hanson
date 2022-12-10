@@ -41,8 +41,11 @@ def test_mutation_mint_shares_handles_negative_numbers(
     user: User,
     market: Market,
 ) -> None:
-    from hanson.models.transaction import create_subtransaction_exchange_points_to_shares
+    from hanson.models.transaction import (
+        create_subtransaction_exchange_points_to_shares,
+    )
     from hanson.models.transaction import create_transaction_income
+
     o1 = Outcome.create_discrete(tx, market.id, "Black", "#000000")
     o2 = Outcome.create_discrete(tx, market.id, "White", "#ffffff")
 
@@ -63,8 +66,12 @@ def test_mutation_mint_shares_handles_negative_numbers(
         amount=Points(Decimal("1.00")),
     )
 
-    balance_o1 = UserAccount.get_share_account(tx, user_id=user.id, market_id=market.id, outcome_id=o1.id)
-    balance_o2 = UserAccount.get_share_account(tx, user_id=user.id, market_id=market.id, outcome_id=o2.id)
+    balance_o1 = UserAccount.get_share_account(
+        tx, user_id=user.id, market_id=market.id, outcome_id=o1.id
+    )
+    balance_o2 = UserAccount.get_share_account(
+        tx, user_id=user.id, market_id=market.id, outcome_id=o2.id
+    )
     balance_pt = UserAccount.get_points_account(tx, user_id=user.id)
     assert balance_o1.balance.amount == Decimal("1.00")
     assert balance_o2.balance.amount == Decimal("1.00")
@@ -78,8 +85,12 @@ def test_mutation_mint_shares_handles_negative_numbers(
         market_id=market.id,
         amount=Points(-Decimal("1.00")),
     )
-    balance_o1 = UserAccount.get_share_account(tx, user_id=user.id, market_id=market.id, outcome_id=o1.id)
-    balance_o2 = UserAccount.get_share_account(tx, user_id=user.id, market_id=market.id, outcome_id=o2.id)
+    balance_o1 = UserAccount.get_share_account(
+        tx, user_id=user.id, market_id=market.id, outcome_id=o1.id
+    )
+    balance_o2 = UserAccount.get_share_account(
+        tx, user_id=user.id, market_id=market.id, outcome_id=o2.id
+    )
     balance_pt = UserAccount.get_points_account(tx, user_id=user.id)
     assert balance_o1.balance.amount == Decimal("0.00")
     assert balance_o2.balance.amount == Decimal("0.00")

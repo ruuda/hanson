@@ -56,7 +56,9 @@ class TickFormat(NamedTuple):
         duration = end_time - start_time
         end_y, end_m, end_d, end_hh, end_mm, *_ = end_time.utctimetuple()
 
-        origin = datetime(end_y, end_m, end_d, end_hh, end_mm // 10 * 10, 0, tzinfo=timezone.utc)
+        origin = datetime(
+            end_y, end_m, end_d, end_hh, end_mm // 10 * 10, 0, tzinfo=timezone.utc
+        )
 
         if duration > timedelta(hours=4):
             origin = datetime(end_y, end_m, end_d, end_hh, 0, 0, tzinfo=timezone.utc)
@@ -70,10 +72,7 @@ class TickFormat(NamedTuple):
         if duration > timedelta(days=90):
             origin = datetime(end_y, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
-        return TickFormat(
-            " ".join(p for p in format_parts if p != ""),
-            origin
-        )
+        return TickFormat(" ".join(p for p in format_parts if p != ""), origin)
 
     def get_label(self, t: datetime) -> str:
         """

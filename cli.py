@@ -71,7 +71,11 @@ def annihilate() -> None:
         for user in User.list_all(tx):
             print(f"{user.username}:")
             accounts = list(UserAccount.list_all_for_user(tx, user.id))
-            markets = {account.market_id for account in accounts if account.market_id is not None}
+            markets = {
+                account.market_id
+                for account in accounts
+                if account.market_id is not None
+            }
             balance_by_outcome = {
                 account.balance.outcome_id: account.balance
                 for account in accounts

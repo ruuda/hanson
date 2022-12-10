@@ -19,7 +19,7 @@ from flask import Blueprint, render_template, request
 from hanson.database import Transaction
 from hanson.http import Response
 from hanson.models.currency import Points, Shares
-from hanson.models.account import MarketAccount
+from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome, Outcomes
 from hanson.models.user import User
@@ -73,6 +73,18 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
 
     author = User.get_by_id(tx, market.author_user_id)
     assert author is not None
+
+    # We display a summary of the user's portfolio on the market page,
+    # so get the user's own balances.
+    user_share_accounts = {
+        account.balance.outcome_id: account
+        for account in UserAccount.list_all_for_user_and_market(
+            tx,
+            session_user.user.id,
+            market_id,
+        )
+        if not account.balance.is_zero()
+    }
 
     outcomes = Outcome.get_all_by_market(tx, market_id)
 
@@ -159,6 +171,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             outcomes=outcomes,
             probabilities=ps,
             capitalization=points_account.balance,
+            user_share_accounts=user_share_accounts,
             graph=graph,
             zip=zip,
         )

@@ -82,6 +82,45 @@ class UserAccount(Generic[Balance]):
                 raise Exception("Invalid account type.")
 
     @staticmethod
+    def list_all_for_user_and_market(
+        tx: Transaction,
+        user_id: int,
+        market_id: int,
+    ) -> Iterable[UserAccount[Shares]]:
+        """
+        List all the share accounts that the user has for a given market.
+        """
+        id: int
+        account_type: str
+        outcome_id: Optional[int]
+        balance: Decimal
+        for id, outcome_id, balance in tx.execute_fetch_all(
+            """
+            SELECT
+              account.id,
+              account.outcome_id,
+              account_current_balance(account.id)
+            FROM
+              account
+            LEFT OUTER JOIN
+              outcome ON account.outcome_id = outcome.id
+            WHERE
+              owner_user_id = %s
+              AND market_id = %s
+            ORDER BY
+              account.outcome_id
+            """,
+            (user_id, market_id),
+        ):
+            assert outcome_id is not None
+            assert market_id is not None
+            yield UserAccount(
+                id=id,
+                balance=Shares(balance, outcome_id),
+                market_id=market_id,
+            )
+
+    @staticmethod
     def get_points_account(
         tx: Transaction, user_id: int
     ) -> Optional[UserAccount[Points]]:

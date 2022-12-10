@@ -29,6 +29,20 @@
         <th>Volume</th>
         <td class="num">13,370.00</td>
       </tr>
+    </table>
+    <h2>Market prices</h2>
+    <div class="distribution" style="grid-template-columns: {%
+      for p in probabilities
+    %}{{p * 100}}fr {% endfor %}">
+      {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
+      <div
+        class="outcome"
+        style="background-color: {{outcome.color}}"
+        title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
+      ></div>
+      {% endfor %}
+    </div>
+    <table class="properties">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
       <tr style="color: {{outcome.color}}">
         <th class="outcome-label">{{outcome.name}}</th>
@@ -36,13 +50,23 @@
       </tr>
       {% endfor %}
     </table>
-    <div class="distribution" style="grid-template-columns: {%
-      for p in probabilities
-    %}{{p * 100}}fr {% endfor %}">
+    <h2>Your portfolio</h2>
+    {% if user_share_accounts | length > 0 %}
+    <table class="properties">
       {% for outcome in outcomes.outcomes %}
-      <div class="outcome" style="background-color: {{outcome.color}}"></div>
+        {% if outcome.id in user_share_accounts %}
+          <tr style="color: {{outcome.color}}">
+            <th class="outcome-label">{{outcome.name}}</th>
+            <td class="num" style="color: {{outcome.color}}">{{
+              "{:.2f}".format(user_share_accounts[outcome.id].balance.amount)
+            }}</td>
+          </tr>
+        {% endif %}
       {% endfor %}
-    </div>
+    </table>
+    {% else %}
+    <p>You have no stakes in this market.</p>
+    {% endif %}
   </div>
 </aside>
 <div class="main-left main-end">

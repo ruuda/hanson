@@ -265,6 +265,13 @@ table.properties td {
   text-align: right;
 }
 
+.aside-content h2 {
+  font-size: inherit;
+  color: inherit;
+  font-weight: 500;
+  margin-top: 1.42rem;
+}
+
 .distribution {
   margin-top: 0.2rem;
   display: grid;

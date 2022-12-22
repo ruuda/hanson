@@ -1,5 +1,5 @@
 site_name: Hanson
-site_url: https://ruuda.github.io/hanson/
+site_url: https://docs.ruuda.nl/hanson/
 repo_url: https://github.com/ruuda/hanson
 strict: true
 theme:

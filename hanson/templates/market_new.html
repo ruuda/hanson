@@ -11,6 +11,13 @@
     <label for="description">Description</label>
     <textarea name="description" id="description" required></textarea>
 
+    {% for i in range(0, 5) %}
+
+    <label for="option{{i}}">Option {{i + 1}}</label>
+    <input name="option{{i}}" id="option{{i}}" {% if i < 2 %}required {% endif %}type="text">
+
+    {% endfor %}
+
     <input type="submit" value="Create market">
 </form>
 {% endblock %}

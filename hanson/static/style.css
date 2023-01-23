@@ -100,7 +100,7 @@ figcaption {
   color: #eee;
 }
 
-input, label {
+input, label, textarea {
   padding: 0.2em;
   font-family: inherit;
   color: inherit;
@@ -211,6 +211,14 @@ form#order-form
   border: 1px solid #eee;
   border-radius: 0.2rem;
   padding: 2rem;
+}
+
+form#market-form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 2em 10em 2em;
+  grid-column-gap: 1rem;
+  grid-row-gap: 0.5rem;
 }
 
 form input[type="submit"] {

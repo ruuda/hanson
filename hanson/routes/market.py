@@ -50,8 +50,13 @@ def route_get_markets(tx: Transaction) -> Response:
 @app.get("/market/new")
 @with_tx
 def route_get_market_new(tx: Transaction) -> Response:
-    _session_user = get_session_user(tx)
-    return Response.internal_error("TODO: Implement new market page.")
+    session_user = get_session_user(tx)
+    return Response.ok_html(
+        render_template(
+            "market_new.html",
+            session_user=session_user,
+        )
+    )
 
 
 @app.post("/market/new")

@@ -3,9 +3,13 @@
 {% block title %}Markets — Hanson{% endblock %}
 
 {% block body %}
-<ul class="main-left main-top market-list">
+<h1 class="main-left main-top">Markets</h1>
+<ul class="main-left market-list">
 {% for market, cap in markets_with_caps %}
   <li><span class="num">{{cap.amount}}</span>&emsp;<a href="/market/{{market.id}}">{{market.title}}</a></li>
 {% endfor %}
 </ul>
+<p class="main-left main-end">
+  <a href="/market/new">Create a new market</a>
+</p>
 {% endblock %}

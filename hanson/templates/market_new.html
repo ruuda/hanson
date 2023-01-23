@@ -1,0 +1,16 @@
+{% extends "base_session.html" %}
+
+{% block title %}New market — Hanson{% endblock %}
+
+{% block body %}
+<h1 class="main-full main-top">Create a new market</h1>
+<form class="main-full main-end" id="market-form" action="/market/new" method="post">
+    <label for="title">Title</label>
+    <input name="title" id="title" type="text" required>
+
+    <label for="description">Description</label>
+    <textarea name="description" id="description" required></textarea>
+
+    <input type="submit" value="Create market">
+</form>
+{% endblock %}

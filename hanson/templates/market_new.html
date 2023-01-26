@@ -7,19 +7,20 @@
   <h1>Create a new market</h1>
   <form id="market-form" action="/market/new" method="post">
       <label for="title">Title</label>
-      <input name="title" id="title" type="text" required>
+      <input name="title" id="title" type="text" required class="span2">
 
       <label for="description">Description</label>
-      <textarea name="description" id="description" required></textarea>
+      <textarea name="description" id="description" required class="span2"></textarea>
 
       {% for i in range(0, 5) %}
 
-      <label for="option{{i}}">Option {{i + 1}}</label>
-      <input name="option{{i}}" id="option{{i}}" {% if i < 2 %}required {% endif %}type="text">
+      <label for="label{{i}}">Option {{i + 1}}</label>
+      <input name="label{{i}}" id="label{{i}}" {% if i < 2 %}required {% endif %}type="text">
+      <input name="color{{i}}" type="color" value="#ff0000">
 
       {% endfor %}
 
-      <input type="submit" value="Create market">
+      <input type="submit" value="Create market" class="span2">
   </form>
 </div>
 {% endblock %}

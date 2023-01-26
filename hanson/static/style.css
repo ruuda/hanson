@@ -92,7 +92,7 @@ a {
   color: #36d;
 }
 
-p, figcaption {
+p, figcaption, table {
   margin-bottom: 1.7rem;
 }
 

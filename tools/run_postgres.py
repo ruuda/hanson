@@ -16,7 +16,6 @@ Usage: ./run_postgres.py [--force-init] <data_dir>
 import os
 import subprocess
 import sys
-import textwrap
 import shutil
 
 force_init = False
@@ -33,14 +32,12 @@ for arg in sys.argv[1:]:
         data_dir = arg
 
 if force_init:
-    shutil.rmtree(f"{data_dir}/pgdata", ignore_errors=True)
-    shutil.rmtree(f"{data_dir}/socket", ignore_errors=True)
+    shutil.rmtree(f"{data_dir}", ignore_errors=True)
 
 is_initialized = os.path.isdir(f"{data_dir}/pgdata")
 
 if not is_initialized:
     os.makedirs(f"{data_dir}/pgdata", exist_ok=True)
-    os.makedirs(f"{data_dir}/socket", exist_ok=True)
 
     # Write a password file for 'initdb' to read from.
     with open(f"{data_dir}/password", "w", encoding="utf-8") as f:
@@ -55,48 +52,9 @@ if not is_initialized:
             f"--pwfile={data_dir}/password",
             f"--pgdata={data_dir}/pgdata",
         ],
+        env={"TZ": "Etc/UTC", **os.environ},
         check=True,
     )
-
-    # Overwrite the default generated config files with these.
-    with open(f"{data_dir}/pgdata/pg_hba.conf", "w", encoding="utf-8") as f:
-        f.write(
-            textwrap.dedent(
-                """
-                # This file specifies Postgres authentication per database and
-                # role. For the development environment, we use password
-                # authentication, because it is easiest to set up.
-
-                #      database   user          auth-method
-                local  all        postgres      md5
-                local  hanson     hanson_app    md5
-                local  hanson     hanson_setup  md5
-                """
-            )
-        )
-
-    with open(f"{data_dir}/pgdata/pg_ident.conf", "w", encoding="utf-8") as f:
-        f.write(
-            textwrap.dedent(
-                """
-                # This file maps Unix usernames to Postgres role names.
-                # This is for peer authentication, which we don’t use.
-                # Hence we leave this file empty.
-                """
-            )
-        )
-
-    with open(f"{data_dir}/pgdata/postgresql.conf", "w", encoding="utf-8") as f:
-        f.write(
-            textwrap.dedent(
-                """
-                # Do not listen on a TCP socket; we connect to Postgres over a
-                # Unix socket.
-                listen_addresses = ''
-                timezone = 'UTC'
-                """
-            )
-        )
 
 
 os.chdir(f"{data_dir}/pgdata")
@@ -109,6 +67,12 @@ os.execvp(
         ".",
         # Directory to put the Unix socket in to listen on.
         "-k",
-        "../socket",
+        "..",
+        # Set the listen address to empty string, we only want to listen on a
+        # Unix socket, not on a port.
+        "-c",
+        "listen_addresses=",
+        "-c",
+        "timezone=UTC",
     ],
 )

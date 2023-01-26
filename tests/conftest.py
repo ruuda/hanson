@@ -20,7 +20,7 @@ from hanson.database import ConnectionPool, Transaction
 from hanson.models.market import Market
 from hanson.models.user import User
 
-pg_host = f"{os.getcwd()}/run/db_test/socket"
+pg_host = f"{os.getcwd()}/run/db_test"
 pg_env: Dict[str, str] = {
     "PATH": os.getenv("PATH") or "",
     "PGDATABASE": "hanson",
@@ -69,7 +69,7 @@ def run_postgres() -> Popen[bytes]:
 @pytest.fixture(scope="session")
 def db_connection() -> Iterable[ConnectionPool]:
     with run_postgres() as postgres:
-        cmd_setup = ["tools/setup_database.py"]
+        cmd_setup = ["tools/migrate.py", "setup"]
         subprocess.run(cmd_setup, env=pg_env, check=True, **setup_out)
 
         cmd_migrate = ["tools/migrate.py", "migrate", "latest"]

@@ -213,6 +213,20 @@ def main() -> None:
 
 
 @main.command()
+def setup() -> None:
+    """
+    Create the database and roles. Must be run before running any migrations.
+    This is idempotent and therefore safe to run multiple times.
+    """
+    import os
+    import subprocess
+    os.putenv("PGUSER", "postgres")
+    os.putenv("PGPASSWORD", "postgres")
+    os.putenv("PGDATABASE", "postgres")
+    subprocess.run(args=["psql", "--file", "migrations/0000-initdb.psql"], check=True)
+
+
+@main.command()
 @click.argument("revision_spec", default="latest", required=False)
 def migrate(revision_spec: str) -> None:
     """

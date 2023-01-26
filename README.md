@@ -20,8 +20,8 @@ Run the initial database setup:
     tools/run_postgres.py --force-init run/db_dev
 
     # In a different terminal:
-    export PGHOST="$PWD/run/db_dev/socket"
-    tools/setup_database.py
+    export PGHOST="$PWD/run/db_dev"
+    tools/migrate.py setup
     tools/migrate.py migrate latest
 
     # Now you can Ctrl+C the postgres instance in the other terminal.

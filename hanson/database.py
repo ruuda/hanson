@@ -160,7 +160,7 @@ def connect_default() -> ConnectionPool:
         database="hanson",
         user="hanson_app",
         password="hanson_app",
-        host=f"{os.getcwd()}/run/db_dev/socket",
+        host=f"{os.getcwd()}/run/db_dev",
     )
 
 

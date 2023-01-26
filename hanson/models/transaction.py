@@ -31,13 +31,13 @@ def create_transaction_income(
 
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "transaction" (type) VALUES ('income') RETURNING id;
+        INSERT INTO transactions (type) VALUES ('income') RETURNING id;
         """
     )
 
     subtransaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "subtransaction" (type, transaction_id)
+        INSERT INTO subtransactions (type, transaction_id)
         VALUES ('income', %s)
         RETURNING id;
         """,
@@ -46,7 +46,7 @@ def create_transaction_income(
 
     mutation_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "mutation" (subtransaction_id, debit_account_id, amount)
+        INSERT INTO mutations (subtransaction_id, debit_account_id, amount)
         VALUES (%s, %s, %s)
         RETURNING id;
         """,
@@ -56,11 +56,11 @@ def create_transaction_income(
     post_balance: Decimal = tx.execute_fetch_scalar(
         """
         INSERT INTO
-          "account_balance" (account_id, mutation_id, post_balance)
+          account_balances (account_id, mutation_id, post_balance)
         VALUES
           ( %(account_id)s
           , %(mutation_id)s
-          , COALESCE(account_current_balance(%(account_id)s), 0.00) + %(amount)s
+          , (SELECT current_balance FROM accounts_ext WHERE id = %(account_id)s) + %(amount)s
           )
         RETURNING
           post_balance;
@@ -101,7 +101,7 @@ def create_mutation_transfer_user_market(
 
     mutation_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "mutation"
+        INSERT INTO mutations
           ( subtransaction_id
           , credit_account_id
           , debit_account_id
@@ -121,15 +121,15 @@ def create_mutation_transfer_user_market(
         tx.execute_fetch_all(
             """
             INSERT INTO
-              "account_balance" (account_id, mutation_id, post_balance)
+              account_balances (account_id, mutation_id, post_balance)
             VALUES
               ( %(user_account_id)s
               , %(mutation_id)s
-              , COALESCE(account_current_balance(%(user_account_id)s), 0.00) - %(amount)s
+              , (SELECT current_balance FROM accounts_ext where id = %(user_account_id)s) - %(amount)s
               ),
               ( %(market_account_id)s
               , %(mutation_id)s
-              , COALESCE(account_current_balance(%(market_account_id)s), 0.00) + %(amount)s
+              , (SELECT current_balance FROM accounts_ext where id = %(market_account_id)s) + %(amount)s
               )
             RETURNING
               post_balance;
@@ -172,7 +172,7 @@ def create_mutation_mint_shares(
     if amount.amount > 0:
         mutation_id = tx.execute_fetch_scalar(
             """
-            INSERT INTO "mutation"
+            INSERT INTO mutations
               ( subtransaction_id
               , debit_account_id
               , amount
@@ -185,7 +185,7 @@ def create_mutation_mint_shares(
     else:
         mutation_id = tx.execute_fetch_scalar(
             """
-            INSERT INTO "mutation"
+            INSERT INTO mutations
               ( subtransaction_id
               , credit_account_id
               , amount
@@ -199,11 +199,11 @@ def create_mutation_mint_shares(
     post_balance: Decimal = tx.execute_fetch_scalar(
         """
         INSERT INTO
-          "account_balance" (account_id, mutation_id, post_balance)
+          account_balances (account_id, mutation_id, post_balance)
         VALUES
           ( %(debit_account_id)s
           , %(mutation_id)s
-          , COALESCE(account_current_balance(%(debit_account_id)s), 0.00) + %(amount)s
+          , (SELECT current_balance FROM accounts_ext WHERE id = %(debit_account_id)s) + %(amount)s
           )
         RETURNING
           post_balance;
@@ -242,13 +242,13 @@ def create_transaction_fund_market(
 
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "transaction" (type) VALUES ('fund_market') RETURNING id;
+        INSERT INTO transactions (type) VALUES ('fund_market') RETURNING id;
         """
     )
 
     subtransaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "subtransaction" (type, transaction_id)
+        INSERT INTO subtransactions (type, transaction_id)
         VALUES ('fund_market', %s)
         RETURNING id;
         """,
@@ -320,7 +320,7 @@ def create_subtransaction_exchange_points_to_shares(
 
     subtransaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "subtransaction" (type, transaction_id)
+        INSERT INTO subtransactions (type, transaction_id)
         VALUES (%s, %s)
         RETURNING id;
         """,
@@ -369,7 +369,7 @@ def create_subtransaction_trade(
 
     subtransaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "subtransaction" (type, transaction_id)
+        INSERT INTO subtransactions (type, transaction_id)
         VALUES ('trade', %s)
         RETURNING id;
         """,
@@ -416,7 +416,7 @@ def create_transaction_execute_order(
     """
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "transaction" (type) VALUES ('trade') RETURNING id;
+        INSERT INTO transactions (type) VALUES ('trade') RETURNING id;
         """
     )
     create_subtransaction_exchange_points_to_shares(
@@ -449,7 +449,7 @@ def create_transaction_annihilate(
     """
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "transaction" (type) VALUES ('annihilate') RETURNING id;
+        INSERT INTO transactions (type) VALUES ('annihilate') RETURNING id;
         """
     )
     create_subtransaction_exchange_points_to_shares(

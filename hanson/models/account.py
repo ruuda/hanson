@@ -45,20 +45,20 @@ class UserAccount(Generic[Balance]):
         for id, account_type, outcome_id, balance, market_id in tx.execute_fetch_all(
             """
             SELECT
-              account.id,
-              account.type,
-              account.outcome_id,
-              account_current_balance(account.id),
-              outcome.market_id
+              accounts_ext.id,
+              accounts_ext.type,
+              accounts_ext.outcome_id,
+              accounts_ext.current_balance,
+              outcomes.market_id
             FROM
-              account
+              accounts_ext
             LEFT OUTER JOIN
-              outcome ON account.outcome_id = outcome.id
+              outcomes ON accounts_ext.outcome_id = outcomes.id
             WHERE
               owner_user_id = %s
             ORDER BY
-              outcome.market_id NULLS FIRST,
-              account.outcome_id
+              outcomes.market_id NULLS FIRST,
+              accounts_ext.outcome_id
             """,
             (user_id,),
         ):
@@ -97,18 +97,18 @@ class UserAccount(Generic[Balance]):
         for id, outcome_id, balance in tx.execute_fetch_all(
             """
             SELECT
-              account.id,
-              account.outcome_id,
-              account_current_balance(account.id)
+              accounts_ext.id,
+              accounts_ext.outcome_id,
+              accounts_ext.current_balance
             FROM
-              account
+              accounts_ext
             LEFT OUTER JOIN
-              outcome ON account.outcome_id = outcome.id
+              outcomes ON accounts_ext.outcome_id = outcomes.id
             WHERE
               owner_user_id = %s
               AND market_id = %s
             ORDER BY
-              account.outcome_id
+              accounts_ext.outcome_id
             """,
             (user_id, market_id),
         ):
@@ -129,8 +129,8 @@ class UserAccount(Generic[Balance]):
         """
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
-            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-            FROM   account
+            SELECT id, current_balance
+            FROM   accounts_ext
             WHERE  type = 'points' AND owner_user_id = %s
             """,
             (user_id,),
@@ -162,7 +162,7 @@ class UserAccount(Generic[Balance]):
 
         account_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO account (type, owner_user_id) VALUES ('points', %s)
+            INSERT INTO accounts (type, owner_user_id) VALUES ('points', %s)
             RETURNING id;
             """,
             (user_id,),
@@ -179,8 +179,8 @@ class UserAccount(Generic[Balance]):
     ) -> Optional[UserAccount[Shares]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
-            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-              FROM account
+            SELECT id, current_balance
+              FROM accounts_ext
              WHERE type = 'shares'
                AND outcome_id = %s
                AND owner_user_id = %s
@@ -232,7 +232,7 @@ class UserAccount(Generic[Balance]):
 
         account_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO account (type, outcome_id, owner_user_id)
+            INSERT INTO accounts (type, outcome_id, owner_user_id)
             VALUES ('shares', %s, %s)
             RETURNING id;
             """,
@@ -261,8 +261,8 @@ class MarketAccount(Generic[Balance]):
     ) -> Optional[MarketAccount[Points]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
-            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-            FROM   account
+            SELECT id, current_balance
+            FROM   accounts_ext
             WHERE  type = 'points' AND owner_market_id = %s
             """,
             (market_id,),
@@ -294,7 +294,7 @@ class MarketAccount(Generic[Balance]):
 
         account_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO account (type, owner_market_id) VALUES ('points', %s)
+            INSERT INTO accounts (type, owner_market_id) VALUES ('points', %s)
             RETURNING id;
             """,
             (market_id,),
@@ -311,8 +311,8 @@ class MarketAccount(Generic[Balance]):
     ) -> Optional[MarketAccount[Shares]]:
         result: Optional[Tuple[int, Decimal]] = tx.execute_fetch_optional(
             """
-            SELECT account.id, COALESCE(account_current_balance(account.id), 0.00)
-              FROM account
+            SELECT id, current_balance
+              FROM accounts_ext
              WHERE type = 'shares'
                AND outcome_id = %s
                AND owner_market_id = %s
@@ -350,7 +350,7 @@ class MarketAccount(Generic[Balance]):
 
         account_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO account (type, outcome_id, owner_market_id)
+            INSERT INTO accounts (type, outcome_id, owner_market_id)
             VALUES ('shares', %s, %s)
             RETURNING id;
             """,
@@ -361,51 +361,3 @@ class MarketAccount(Generic[Balance]):
             balance=Shares.zero(outcome_id),
             market_id=market_id,
         )
-
-
-def get_user_share_balance(
-    tx: Transaction, user_id: int, outcome_id: int
-) -> Optional[Shares]:
-    with tx.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-              account_current_balance(id)
-            FROM
-              account
-            WHERE
-              owner_user_id = %s
-              AND outcome_id = %s
-              AND type = 'shares'
-            """,
-            (user_id, outcome_id),
-        )
-        result = cur.fetchone()
-        if result is not None:
-            return Shares(result[0], outcome_id)
-        else:
-            return None
-
-
-def get_market_share_balance(
-    tx: Transaction, market_id: int, outcome_id: int
-) -> Optional[Shares]:
-    with tx.cursor() as cur:
-        cur.execute(
-            """
-            SELECT
-              account_current_balance(id)
-            FROM
-              account
-            WHERE
-              owner_market_id = %s
-              AND outcome_id = %s
-              AND type = 'shares'
-            """,
-            (market_id, outcome_id),
-        )
-        result = cur.fetchone()
-        if result is not None:
-            return Shares(result[0], outcome_id)
-        else:
-            return None

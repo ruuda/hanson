@@ -30,7 +30,7 @@ class Market(NamedTuple):
     ) -> Market:
         market_id, created_at = tx.execute_fetch_one(
             """
-            INSERT INTO "market" (author_user_id)
+            INSERT INTO markets (author_user_id)
             VALUES (%s)
             RETURNING id, created_at;
             """,
@@ -38,13 +38,13 @@ class Market(NamedTuple):
         )
         tx.execute(
             """
-            INSERT INTO "market_title" (market_id, title) VALUES (%s, %s);
+            INSERT INTO market_titles (market_id, title) VALUES (%s, %s);
             """,
             (market_id, title),
         )
         tx.execute(
             """
-            INSERT INTO "market_description" (market_id, description) VALUES (%s, %s);
+            INSERT INTO market_descriptions (market_id, description) VALUES (%s, %s);
             """,
             (market_id, description),
         )
@@ -59,11 +59,11 @@ class Market(NamedTuple):
             SELECT
               id,
               author_user_id,
-              market_current_title(id),
-              market_current_description(id),
+              current_title,
+              current_description,
               created_at
             FROM
-              "market"
+              markets_ext
             WHERE
               id = %s
             """,
@@ -89,16 +89,16 @@ class Market(NamedTuple):
             SELECT
               id,
               author_user_id,
-              market_current_title(id),
-              market_current_description(id),
+              current_title,
+              current_description,
               created_at,
               (
-                SELECT COALESCE(account_current_balance(account.id), 0.00)
-                FROM   account
-                WHERE  type = 'points' AND owner_market_id = market.id
+                SELECT current_balance
+                FROM   accounts_ext
+                WHERE  type = 'points' AND owner_market_id = markets_ext.id
               ) as capitalization
             FROM
-              "market"
+              markets_ext
             ORDER BY
               capitalization DESC;
             """,
@@ -113,7 +113,7 @@ class Market(NamedTuple):
     def update_description(self, tx: Transaction, new_description: str) -> Market:
         tx.execute(
             """
-            INSERT INTO "market_description" (market_id, description) VALUES (%s, %s);
+            INSERT INTO market_descriptions (market_id, description) VALUES (%s, %s);
             """,
             (self.id, new_description),
         )

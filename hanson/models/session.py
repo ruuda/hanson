@@ -32,7 +32,7 @@ class Session(NamedTuple):
         expires_at: datetime
         session_id, created_at, expires_at = tx.execute_fetch_one(
             """
-            INSERT INTO "session" (user_id, token, expires_at)
+            INSERT INTO sessions (user_id, token, expires_at)
             VALUES (%s, %s, now() + '30d'::INTERVAL)
             RETURNING id, created_at, expires_at;
             """,
@@ -52,7 +52,7 @@ class Session(NamedTuple):
         ] = tx.execute_fetch_optional(
             """
             SELECT id, user_id, created_at, expires_at
-            FROM "session"
+            FROM sessions
             WHERE token = %s AND expires_at > now();
             """,
             (token,),

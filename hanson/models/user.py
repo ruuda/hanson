@@ -73,14 +73,14 @@ class User(NamedTuple):
         assert User.is_valid_username(username)
         assert User.is_valid_full_name(full_name)
         user_id, created_at = tx.execute_fetch_one(
-            'INSERT INTO "user" DEFAULT VALUES RETURNING id, created_at;',
+            'INSERT INTO users DEFAULT VALUES RETURNING id, created_at;',
         )
         tx.execute(
-            "INSERT INTO user_username (user_id, username) VALUES (%s, %s);",
+            "INSERT INTO user_usernames (user_id, username) VALUES (%s, %s);",
             (user_id, username),
         )
         tx.execute(
-            "INSERT INTO user_full_name (user_id, full_name) VALUES (%s, %s);",
+            "INSERT INTO user_full_names (user_id, full_name) VALUES (%s, %s);",
             (user_id, full_name),
         )
         return User(user_id, username, full_name, created_at)
@@ -90,7 +90,7 @@ class User(NamedTuple):
         result: Optional[Tuple[int]] = tx.execute_fetch_optional(
             """
             SELECT user_id
-            FROM user_username
+            FROM user_usernames
             WHERE username = %s
             """,
             (username,),
@@ -106,11 +106,11 @@ class User(NamedTuple):
             """
             SELECT
               id,
-              user_current_username(id),
-              user_current_full_name(id),
+              current_username,
+              current_full_name,
               created_at
             FROM
-              "user"
+              users_ext
             WHERE
               id = %s;
             """,
@@ -131,11 +131,11 @@ class User(NamedTuple):
             """
             SELECT
               id,
-              user_current_username(id),
-              user_current_full_name(id),
+              current_username,
+              current_full_name,
               created_at
             FROM
-              "user"
+              users_ext
             ORDER BY
               -- TODO: Order by net worth, once we have that.
               created_at ASC;

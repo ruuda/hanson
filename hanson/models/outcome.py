@@ -30,7 +30,7 @@ class Outcome:
     ) -> OutcomeDiscrete:
         outcome_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO "outcome" (market_id, name, color)
+            INSERT INTO outcomes (market_id, name, color)
             VALUES (%s, %s, %s)
             RETURNING id;
             """,
@@ -48,7 +48,7 @@ class Outcome:
     ) -> OutcomeFloat:
         outcome_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO "outcome" (market_id, name, color, value_float)
+            INSERT INTO outcomes (market_id, name, color, value_float)
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
@@ -67,7 +67,7 @@ class Outcome:
         assert value.tzinfo is not None
         outcome_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO "outcome" (market_id, name, color, value_datetime)
+            INSERT INTO soutcomes (market_id, name, color, value_datetime)
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
@@ -97,7 +97,7 @@ class Outcome:
               value_float,
               value_datetime
             FROM
-              "outcome"
+              outcomes
             WHERE
               market_id = %s
             ORDER BY

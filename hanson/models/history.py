@@ -108,23 +108,23 @@ class ProbabilityHistory(NamedTuple):
               outcome_id,
               post_balance as bin_end_balance
             from
-              account_balance,
-              account,
-              mutation,
-              subtransaction,
-              transaction
+              account_balances,
+              accounts,
+              mutations,
+              subtransactions,
+              transactions
             where
-              account_balance.mutation_id = mutation.id
-              and account_balance.account_id = account.id
-              and mutation.subtransaction_id = subtransaction.id
-              and subtransaction.transaction_id = transaction.id
-              and account.owner_market_id = %(market_id)s
-              and account.type = 'shares'
+              account_balances.mutation_id = mutations.id
+              and account_balances.account_id = accounts.id
+              and mutations.subtransaction_id = subtransactions.id
+              and subtransactions.transaction_id = transactions.id
+              and accounts.owner_market_id = %(market_id)s
+              and accounts.type = 'shares'
             order by
               bin_end,
               outcome_id,
               -- Per bin, we want the balance of the latest mutation in that bin.
-              mutation.id desc;
+              mutations.id desc;
             """,
             {
                 "bin_size": bin_size,

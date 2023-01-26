@@ -3,9 +3,53 @@
 {% block title %}{{market.title}} — Hanson{% endblock %}
 
 {% block body %}
-<h1 class="main-left main-top">{{market.title}}</h1>
-<aside>
-  <div class="aside-content main-top">
+<div class="main-content">
+  <h1>{{market.title}}</h1>
+  <div>
+    <figure>
+      {{graph | safe}}
+      <figcaption>
+        <a href="?graph_range=all">All time</a> |
+        <a href="?graph_range=365d">1 year</a> |
+        <a href="?graph_range=90d">90 days</a> |
+        <a href="?graph_range=30d">30 days</a> |
+        <a href="?graph_range=7d">7 days</a>   |
+        <a href="?graph_range=24h">24 hours</a>
+      </figcaption>
+    </figure>
+    <p>{{market.description}}</p>
+    <form id="order-form" action="/market/{{market.id}}/checkout" method="get">
+      {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
+        <label for="outcome{{outcome.id}}">{{outcome.name}}</label>
+        <input
+          name="outcome{{outcome.id}}"
+          id="outcome{{outcome.id}}"
+          class="num"
+          type="number"
+          step="0.01"
+          min="0.00"
+          required
+          value="{{"{:.2f}".format(p)}}"
+        >
+      {% endfor %}
+      <label for="max-spend">Max points to spend</label>
+      <!-- TODO: add max="points_balance" -->
+      <input
+        name="max_spend"
+        id="max-spend"
+        class="num"
+        type="number"
+        step="0.1"
+        min="0.00"
+        required
+        value="1.0"
+      >
+      <input type="submit" value="Proceed to Checkout">
+    </form>
+  </div>
+</div>
+<aside class="main-aside">
+  <div class="aside-content">
     <table class="properties">
       <tr>
         <th>Author</th>
@@ -14,11 +58,11 @@
       <tr>
         <th>Created</th>
         <td class="num">
-          <span title="{{
-            market.created_at.isoformat(sep=' ', timespec='seconds')
-          }}">{{
-            market.created_at.strftime("%Y-%m-%d")
-          }}</span>
+        <span title="{{
+          market.created_at.isoformat(sep=' ', timespec='seconds')
+        }}">{{
+          market.created_at.strftime("%Y-%m-%d")
+        }}</span>
         </td>
       </tr>
       <tr>
@@ -33,14 +77,14 @@
     <h2>Market prices</h2>
     <div class="distribution" style="grid-template-columns: {%
       for p in probabilities
-    %}{{p * 100}}fr {% endfor %}">
+      %}{{p * 100}}fr {% endfor %}">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
       <div
-        class="outcome"
-        style="background-color: {{outcome.color}}"
-        title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
+              class="outcome"
+              style="background-color: {{outcome.color}}"
+              title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
       ></div>
-      {% endfor %}
+    {% endfor %}
     </div>
     <table class="properties">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
@@ -54,14 +98,14 @@
     {% if user_share_accounts | length > 0 %}
     <table class="properties">
       {% for outcome in outcomes.outcomes %}
-        {% if outcome.id in user_share_accounts %}
-          <tr style="color: {{outcome.color}}">
-            <th class="outcome-label">{{outcome.name}}</th>
-            <td class="num" style="color: {{outcome.color}}">{{
-              "{:.2f}".format(user_share_accounts[outcome.id].balance.amount)
-            }}</td>
-          </tr>
-        {% endif %}
+      {% if outcome.id in user_share_accounts %}
+      <tr style="color: {{outcome.color}}">
+        <th class="outcome-label">{{outcome.name}}</th>
+        <td class="num" style="color: {{outcome.color}}">{{
+          "{:.2f}".format(user_share_accounts[outcome.id].balance.amount)
+          }}</td>
+      </tr>
+      {% endif %}
       {% endfor %}
     </table>
     {% else %}
@@ -69,46 +113,4 @@
     {% endif %}
   </div>
 </aside>
-<div class="main-left main-end">
-  <figure>
-    {{graph | safe}}
-    <figcaption>
-      <a href="?graph_range=all">All time</a> |
-      <a href="?graph_range=365d">1 year</a> |
-      <a href="?graph_range=90d">90 days</a> |
-      <a href="?graph_range=30d">30 days</a> |
-      <a href="?graph_range=7d">7 days</a>   |
-      <a href="?graph_range=24h">24 hours</a>
-    </figcaption>
-  </figure>
-  <p>{{market.description}}</p>
-  <form id="order-form" action="/market/{{market.id}}/checkout" method="get">
-    {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
-      <label for="outcome{{outcome.id}}">{{outcome.name}}</label>
-      <input
-        name="outcome{{outcome.id}}"
-        id="outcome{{outcome.id}}"
-        class="num"
-        type="number"
-        step="0.01"
-        min="0.00"
-        required
-        value="{{"{:.2f}".format(p)}}"
-      >
-    {% endfor %}
-    <label for="max-spend">Max points to spend</label>
-    <!-- TODO: add max="points_balance" -->
-    <input
-      name="max_spend"
-      id="max-spend"
-      class="num"
-      type="number"
-      step="0.1"
-      min="0.00"
-      required
-      value="1.0"
-    >
-    <input type="submit" value="Proceed to Checkout">
-  </form>
-</div>
 {% endblock %}

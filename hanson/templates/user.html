@@ -3,9 +3,13 @@
 {% block title %}{{profile_user.full_name}} — Hanson{% endblock %}
 
 {% block body %}
-<h1 class="main-left main-top">{{profile_user.full_name}}</h1>
+<div class="main-content">
+  <h1>{{profile_user.full_name}}</h1>
+  <p>Here we will later add an overview of the markets created,
+    and possibly the market that the user has a position in.</p>
+</div>
 <aside>
-  <div class="aside-content main-top">
+  <div class="aside-content">
     <table class="properties">
       <tr>
         <th>Username</th>
@@ -28,8 +32,4 @@
     </table>
   </div>
 </aside>
-<div class="main-left">
-  <p>Here we will later add an overview of the markets created,
-    and possibly the market that the user has a position in.</p>
-</div>
 {% endblock %}

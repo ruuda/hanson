@@ -229,21 +229,16 @@ form input[type="submit"] {
   grid-template-rows: auto 1fr;
 }
 
-#main .main-top {
-  margin-top: 4rem;
-}
-
-#main .main-end {
-  margin-bottom: 4rem;
-}
-
-#main .main-left {
+#main .main-content {
   grid-column: 2 / 4;
   padding-right: 4rem;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
 }
 
 #main .main-full {
   grid-column: 2 / 5;
+  padding-right: 0;
 }
 
 #main aside {
@@ -255,6 +250,8 @@ form input[type="submit"] {
 }
 
 #main .aside-content {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
   width: 18rem;
   color: #78a;
 }

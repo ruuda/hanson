@@ -109,3 +109,12 @@ class Market(NamedTuple):
             assert all(field is not None for field in result)
             capitalization = Points(result[-1])
             yield Market(*result[:-1]), capitalization
+
+    def update_description(self, tx: Transaction, new_description: str) -> Market:
+        tx.execute(
+            """
+            INSERT INTO "market_description" (market_id, description) VALUES (%s, %s);
+            """,
+            (self.id, new_description),
+        )
+        return self._replace(description=new_description)

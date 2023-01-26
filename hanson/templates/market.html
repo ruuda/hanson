@@ -17,7 +17,7 @@
         <a href="?graph_range=24h">24 hours</a>
       </figcaption>
     </figure>
-    <p>{{market.description}}</p>
+    <p class="pre">{{market.description}}</p>
     <form id="order-form" action="/market/{{market.id}}/checkout" method="get">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
         <label for="outcome{{outcome.id}}">{{outcome.name}}</label>

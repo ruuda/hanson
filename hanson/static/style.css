@@ -308,6 +308,8 @@ table.properties td {
   position: relative;
   overflow: hidden;
   border-radius: 0.25rem;
+  margin-bottom: 0.25rem;
+  margin-top: 0.25rem;
 }
 
 .outcome {
@@ -341,6 +343,11 @@ table.asset-report td {
   padding-right: 1.42rem;
 }
 
+table.asset-report th:last-child,
+table.asset-report td:last-child {
+  padding-right: 0;
+}
+
 table tr.post-header th,
 table tr.post-header td {
   padding-top: 1.42rem;
@@ -363,4 +370,9 @@ figure svg {
 figure svg text {
   /* "1px" in the graph is the width of one time step. */
   font-size: 0.5px;
+}
+
+p.pre {
+  /* Preserve breaks in the input text. */
+  white-space: pre-wrap;
 }

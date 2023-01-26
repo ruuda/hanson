@@ -12,7 +12,7 @@ import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from flask import Blueprint, render_template, request
 
@@ -64,8 +64,8 @@ def route_get_market_new(tx: Transaction) -> Response:
 def route_post_market_new(tx: Transaction) -> Response:
     session_user = get_session_user(tx)
 
-    title = request.form.get("title")
-    description = request.form.get("description")
+    title: Optional[str] = request.form.get("title")
+    description: Optional[str] = request.form.get("description")
 
     if title is None or len(title) == 0:
         return Response.bad_request("Missing 'title' field.")
@@ -73,11 +73,15 @@ def route_post_market_new(tx: Transaction) -> Response:
     if description is None or len(description) == 0:
         return Response.bad_request("Missing 'description' field.")
 
+    title = title.replace("\r", "").strip()
+    description = description.replace("\r", "").strip()
+
     outcome_descriptions: List[Tuple[str, str]] = []
     for i in range(0, 5):
-        label = request.form.get(f"label{i}")
+        label: Optional[str] = request.form.get(f"label{i}")
         color = request.form.get(f"color{i}")
         if label is not None and len(label) > 0:
+            label = label.strip()
             outcome_descriptions.append((label, color))
 
     market = Market.create(

@@ -62,8 +62,25 @@ def route_get_market_new(tx: Transaction) -> Response:
 @app.post("/market/new")
 @with_tx
 def route_post_market_new(tx: Transaction) -> Response:
-    _session_user = get_session_user(tx)
-    return Response.internal_error("TODO: Implement post new market page.")
+    session_user = get_session_user(tx)
+
+    title = request.form.get("title")
+    description = request.form.get("description")
+
+    if title is None or len(title) == 0:
+        return Response.bad_request("Missing 'title' field.")
+
+    if description is None or len(description) == 0:
+        return Response.bad_request("Missing 'description' field.")
+
+    outcomes = []
+    for i in range(0, 5):
+        label = request.form.get(f"label{i}")
+        color = request.form.get(f"color{i}")
+        if label is not None and len(label) > 0:
+            outcomes.append((label, color))
+
+    return Response.internal_error(f"{title}, {description}, {outcomes}")
 
 
 @app.get("/market/<int:market_id>")

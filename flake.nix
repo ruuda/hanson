@@ -32,6 +32,7 @@
         devShells = {
           default = pkgs.mkShell {
             name = "hanson";
+
             nativeBuildInputs = [
               pkgs.black
               pkgs.overmind
@@ -39,7 +40,13 @@
               pkgs.mkdocs
               python
             ];
+
             LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+
+            # Some default env vars to make psql a bit easier to use.
+            PGDATABASE = "hanson";
+            PGUSER = "hanson_setup";
+            PGPASSWORD = "hanson_setup";
           };
         };
 

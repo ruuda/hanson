@@ -12,7 +12,7 @@ import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import List
+from typing import List, Tuple
 
 from flask import Blueprint, render_template, request
 
@@ -26,7 +26,7 @@ from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
 from hanson.models.probability import ProbabilityDistribution
-from hanson.models.transaction import create_transaction_execute_order
+import hanson.models.transaction as transaction
 from hanson.models.history import ProbabilityHistory
 from hanson.graph import render_graph
 
@@ -73,14 +73,35 @@ def route_post_market_new(tx: Transaction) -> Response:
     if description is None or len(description) == 0:
         return Response.bad_request("Missing 'description' field.")
 
-    outcomes = []
+    outcome_descriptions: List[Tuple[str, str]] = []
     for i in range(0, 5):
         label = request.form.get(f"label{i}")
         color = request.form.get(f"color{i}")
         if label is not None and len(label) > 0:
-            outcomes.append((label, color))
+            outcome_descriptions.append((label, color))
 
-    return Response.internal_error(f"{title}, {description}, {outcomes}")
+    market = Market.create(
+        tx,
+        author_user_id=session_user.user.id,
+        title=title,
+        description=description,
+    )
+    outcomes: List[Outcome] = []
+
+    for label, color in outcome_descriptions:
+        outcomes.append(Outcome.create_discrete(tx, market.id, label, color))
+
+    _fund_txid = transaction.create_transaction_fund_market(
+        tx,
+        user_id=session_user.user.id,
+        market_id=market.id,
+        # TODO: Make initial balance configurable.
+        amount=Points(Decimal("10.00")),
+    )
+
+    tx.commit()
+
+    return Response.redirect_see_other(f"/market/{market.id}")
 
 
 @app.get("/market/<int:market_id>")
@@ -338,7 +359,7 @@ def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
     if isinstance(order, Response):
         return order
 
-    create_transaction_execute_order(
+    transaction.create_transaction_execute_order(
         tx,
         debit_user_id=session_user.user.id,
         credit_market_id=market_id,

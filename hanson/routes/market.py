@@ -259,7 +259,7 @@ class OrderDetails:
     max_spend: Points
 
     @staticmethod
-    def from_request(tx: Transaction, market_id: int) -> OrderDetails | Response:
+    def from_request(tx: Transaction, user_id: int, market_id: int) -> OrderDetails | Response:
         """
         Extract order details from the request (either through GET or POST),
         correct the amounts if needed to normalize the distribution and to stay
@@ -284,6 +284,15 @@ class OrderDetails:
 
         pool_accounts = [
             MarketAccount.expect_pool_account(tx, market_id, outcome.id)
+            for outcome in outcomes.outcomes
+        ]
+        user_accounts = [
+            UserAccount.expect_share_account(
+                tx,
+                user_id=user_id,
+                market_id=market_id,
+                outcome_id=outcome.id,
+            )
             for outcome in outcomes.outcomes
         ]
 
@@ -312,11 +321,20 @@ class OrderDetails:
         # rounding, and repeat that to steal all the points.
         costs = [math.ceil(x * 100) / Decimal("100.00") for x in costs]
 
-        # The "costs" are the changes in the pool balances. But we assume the user
-        # right now doesn't have any shares. (TODO: Take current balance into account.)
-        # So any shares we want to put in the pool, we have to first create by
-        # exchanging points for shares.
-        cost = Points(max(*costs))
+        # The "costs" are the changes in the pool balances. Some of those changes,
+        # the user may be able to afford already (the user has the shares). But
+        # for some, the user may not have the shares. For those, we first have
+        # to create them by exchanging points for shares.
+        new_balances = [
+            account_i.balance.amount - cost_i
+            for cost_i, account_i in zip(costs, user_accounts)
+        ]
+
+        # If any balance would turn negative, we have to first exchange points
+        # to shares to compensate. Conversely, if all balances would be positive,
+        # then we should convert some shares back to points, and we have a
+        # negative cost (a profit in points).
+        cost = Points(-min(*new_balances))
 
         pd_after = pd_target
         if cost > max_spend:
@@ -343,7 +361,7 @@ class OrderDetails:
 def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
     session_user = get_session_user(tx)
 
-    order = OrderDetails.from_request(tx, market_id)
+    order = OrderDetails.from_request(tx, session_user.user.id, market_id)
     if isinstance(order, Response):
         return order
 
@@ -364,7 +382,7 @@ def route_get_market_checkout(tx: Transaction, market_id: int) -> Response:
 def route_post_market_checkout(tx: Transaction, market_id: int) -> Response:
     session_user = get_session_user(tx)
 
-    order = OrderDetails.from_request(tx, market_id)
+    order = OrderDetails.from_request(tx, session_user.user.id, market_id)
     if isinstance(order, Response):
         return order
 

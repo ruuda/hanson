@@ -412,20 +412,23 @@ def create_transaction_execute_order(
     amounts: List[Shares],
 ) -> int:
     """
-    TODO
+    Create a transaction that exchanges the given amount of shares.
     """
     transaction_id: int = tx.execute_fetch_scalar(
         """
         INSERT INTO transactions (type) VALUES ('trade') RETURNING id;
         """
     )
-    create_subtransaction_exchange_points_to_shares(
-        tx,
-        transaction_id=transaction_id,
-        user_id=debit_user_id,
-        market_id=credit_market_id,
-        amount=cost,
-    )
+    if cost.amount > 0:
+        # If the cost is positive, first exchange so we have the shares to trade.
+        create_subtransaction_exchange_points_to_shares(
+            tx,
+            transaction_id=transaction_id,
+            user_id=debit_user_id,
+            market_id=credit_market_id,
+            amount=cost,
+        )
+
     create_subtransaction_trade(
         tx,
         transaction_id=transaction_id,
@@ -433,6 +436,16 @@ def create_transaction_execute_order(
         credit_market_id=credit_market_id,
         amounts=amounts,
     )
+
+    if cost.amount < 0:
+        # If the cost is negative, we first trade, so we have the shares to destroy.
+        create_subtransaction_exchange_points_to_shares(
+            tx,
+            transaction_id=transaction_id,
+            user_id=debit_user_id,
+            market_id=credit_market_id,
+            amount=cost,
+        )
     return transaction_id
 
 

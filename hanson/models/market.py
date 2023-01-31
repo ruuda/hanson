@@ -111,7 +111,9 @@ class Market(NamedTuple):
             # We promise the type system that no field is none, but the title
             # and description are not enforced by the database to not be null:
             # there could be no rows (which would be a bug).
-            assert all(field is not None for field in result)
+            assert result[2] is not None
+            assert result[3] is not None
+
             capitalization = Points(result[-1])
             yield Market(*result[:-1]), capitalization
 

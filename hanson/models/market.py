@@ -19,6 +19,7 @@ class Market(NamedTuple):
     author_user_id: int
     title: str
     description: str
+    resolution_id: Optional[int]
     created_at: datetime
 
     @staticmethod
@@ -48,12 +49,13 @@ class Market(NamedTuple):
             """,
             (market_id, description),
         )
-        return Market(market_id, author_user_id, title, description, created_at)
+        resolution_id = None
+        return Market(market_id, author_user_id, title, description, resolution_id, created_at)
 
     @staticmethod
     def get_by_id(tx: Transaction, market_id: int) -> Optional[Market]:
         result: Optional[
-            Tuple[int, int, str, str, datetime]
+            Tuple[int, int, str, str, Optional[int], datetime]
         ] = tx.execute_fetch_optional(
             """
             SELECT
@@ -61,6 +63,7 @@ class Market(NamedTuple):
               author_user_id,
               current_title,
               current_description,
+              current_resolution_id,
               created_at
             FROM
               markets_ext
@@ -76,7 +79,8 @@ class Market(NamedTuple):
         # We promise the type system that no field is none, but the title
         # and description are not enforced by the database to not be null:
         # there could be no rows (which would be a bug).
-        assert all(field is not None for field in result)
+        assert result[2] is not None
+        assert result[3] is not None
 
         return Market(*result)
 
@@ -91,6 +95,7 @@ class Market(NamedTuple):
               author_user_id,
               current_title,
               current_description,
+              current_resolution_id,
               created_at,
               (
                 SELECT current_balance
@@ -118,3 +123,13 @@ class Market(NamedTuple):
             (self.id, new_description),
         )
         return self._replace(description=new_description)
+
+    def resolve(self, tx: Transaction, resolver_user_id: int) -> None:
+        tx.execute(
+            """
+            INSERT INTO resolutions (market_id, resolver) VALUES (%s, %s);
+            """,
+            (self.id, resolver_user_id),
+        )
+        # TODO: Insert current values and mark them as such.
+        # TODO: Add test for this.

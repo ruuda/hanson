@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Iterable, NamedTuple, Optional, Tuple
 
 from hanson.database import Transaction
@@ -135,3 +136,40 @@ class Market(NamedTuple):
         )
         # TODO: Insert current values and mark them as such.
         # TODO: Add test for this.
+
+    def get_trading_volume(
+        self,
+        tx: Transaction,
+        start_time: Optional[datetime],
+        end_time: Optional[datetime],
+    ) -> Points:
+        """
+        Return how much points were traded in this market in the given time frame.
+        Omit the bounds for the total volume. The lower bound is inclusive, the
+        upper bound is exclusive.
+        """
+        volume: Decimal = tx.execute_fetch_scalar(
+            """
+            select
+              coalesce(sum(amount), 0.00)
+            from
+              mutations,
+              subtransactions,
+              transactions,
+              accounts
+            where
+              subtransactions.type in ('exchange_create_shares', 'exchange_destroy_shares')
+              and subtransactions.transaction_id = transactions.id
+              and mutations.subtransaction_id = subtransactions.id
+              and (mutations.credit_account_id = accounts.id or mutations.debit_account_id = accounts.id)
+              and accounts.owner_market_id = %(market_id)s
+              and (transactions.created_at >= %(start_time)s or %(start_time)s is null)
+              and (transactions.created_at <  %(end_time)s   or %(end_time)s   is null);
+            """,
+            {
+                "market_id": self.id,
+                "start_time": start_time,
+                "end_time": end_time
+            }
+        )
+        return Points(volume)

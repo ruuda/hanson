@@ -144,6 +144,8 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         for outcome in outcomes.outcomes
     ]
 
+    volume_total = market.get_trading_volume(tx, start_time=None, end_time=None)
+
     # Probabilities are proportional to exp(-pool_balance) per share, for the
     # logarithmic market scoring rule.
     numers = [math.exp(-pool_account.balance.amount) for pool_account in pool_accounts]
@@ -220,6 +222,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             outcomes=outcomes,
             probabilities=ps,
             capitalization=points_account.balance,
+            volume_total=volume_total,
             user_share_accounts=user_share_accounts,
             graph=graph,
             zip=zip,

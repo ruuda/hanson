@@ -81,6 +81,8 @@ def route_post_market_new(tx: Transaction) -> Response:
         label: Optional[str] = request.form.get(f"label{i}")
         color = request.form.get(f"color{i}")
         if label is not None and len(label) > 0:
+            if color is None or len(color) != 7:
+                return Response.bad_request("Invalid or missing 'color'.")
             label = label.strip()
             outcome_descriptions.append((label, color))
 

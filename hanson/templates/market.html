@@ -88,9 +88,12 @@
     </div>
     <table class="properties">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
-      <tr style="color: {{outcome.color}}">
+      <tr
+          style="color: {{outcome.color}}"
+          title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
+      >
         <th class="outcome-label">{{outcome.name}}</th>
-        <td class="num" style="color: {{outcome.color}}">{{"{:.2f}".format(p)}}</td>
+        <td class="num" style="color: {{outcome.color}}">ℙ&nbsp;{{"{:.2f}".format(p)}}</td>
       </tr>
       {% endfor %}
     </table>

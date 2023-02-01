@@ -110,6 +110,9 @@
       </tr>
       {% endif %}
       {% endfor %}
+      <tr>
+        <th class="light"><a href="/market/{{market.id}}/checkout?close_position">Close position</a></th>
+      </tr>
     </table>
     {% else %}
     <p>You have no stakes in this market.</p>

@@ -51,7 +51,9 @@ class Market(NamedTuple):
             (market_id, description),
         )
         resolution_id = None
-        return Market(market_id, author_user_id, title, description, resolution_id, created_at)
+        return Market(
+            market_id, author_user_id, title, description, resolution_id, created_at
+        )
 
     @staticmethod
     def get_by_id(tx: Transaction, market_id: int) -> Optional[Market]:
@@ -166,10 +168,6 @@ class Market(NamedTuple):
               and (transactions.created_at >= %(start_time)s or %(start_time)s is null)
               and (transactions.created_at <  %(end_time)s   or %(end_time)s   is null);
             """,
-            {
-                "market_id": self.id,
-                "start_time": start_time,
-                "end_time": end_time
-            }
+            {"market_id": self.id, "start_time": start_time, "end_time": end_time},
         )
         return Points(volume)

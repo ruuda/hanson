@@ -259,7 +259,9 @@ class OrderDetails:
     max_spend: Points
 
     @staticmethod
-    def from_request(tx: Transaction, user_id: int, market_id: int) -> OrderDetails | Response:
+    def from_request(
+        tx: Transaction, user_id: int, market_id: int
+    ) -> OrderDetails | Response:
         """
         Extract order details from the request (either through GET or POST),
         correct the amounts if needed to normalize the distribution and to stay
@@ -330,8 +332,7 @@ class OrderDetails:
         # for some, the user may not have the shares. For those, we first have
         # to create them by exchanging points for shares.
         new_balances = [
-            balance_i.amount - cost_i
-            for cost_i, balance_i in zip(costs, user_balances)
+            balance_i.amount - cost_i for cost_i, balance_i in zip(costs, user_balances)
         ]
 
         # If any balance would turn negative, we have to first exchange points

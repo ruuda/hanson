@@ -73,7 +73,7 @@ class User(NamedTuple):
         assert User.is_valid_username(username)
         assert User.is_valid_full_name(full_name)
         user_id, created_at = tx.execute_fetch_one(
-            'INSERT INTO users DEFAULT VALUES RETURNING id, created_at;',
+            "INSERT INTO users DEFAULT VALUES RETURNING id, created_at;",
         )
         tx.execute(
             "INSERT INTO user_usernames (user_id, username) VALUES (%s, %s);",

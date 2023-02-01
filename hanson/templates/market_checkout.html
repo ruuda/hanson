@@ -5,28 +5,34 @@
 {% block body %}
 <div class="main-content main-full">
   <h1>{{order.market.title}}</h1>
-  <table>
+  <table class="checkout">
     <tr>
       <th>Outcome</th>
       <th colspan="3">Probability</th>
+      <th colspan="3">Balance</th>
       <th>Net Change</th>
     </tr>
-    {% for outcome, p_before, p_after, change in zip(
+    {% for outcome, p_before, p_after, balance_before, change in zip(
         order.outcomes.outcomes,
         order.pd_before.ps(),
         order.pd_after.ps(),
+        order.balance_before,
         order.costs_shares,
     ) %}
       <tr>
         <td>{{outcome.name}}</td>
         <td class="num">{{"{:.3f}".format(p_before)}}</td>
-        <td>→</td>
-        <td class="num">{{"{:.3f}".format(p_after)}}</td>
+        <td class="arrow">→</td>
+        <td class="num arrow">{{"{:.3f}".format(p_after)}}</td>
+        <td class="num">{{"{:.2f}".format(balance_before.amount)}}</td>
+        <td class="arrow">→</td>
+        <td class="num arrow" >{{"{:.2f}".format(balance_before.amount + order.cost_points.amount - change)}}</td>
         <td class="num">{{"{:.2f}".format(order.cost_points.amount - change)}}</td>
       </tr>
     {% endfor %}
     <tr>
       <th>Points</th>
+      <th colspan="3"></th>
       <th colspan="3"></th>
       <th class="num">{{"{:.2f}".format(-order.cost_points.amount)}}</th>
     </tr>

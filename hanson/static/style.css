@@ -278,6 +278,10 @@ form input[type="color"] {
   color: #78a;
 }
 
+table th, table td {
+  text-align: left;
+}
+
 table.properties {
   width: 100%;
 }
@@ -294,6 +298,19 @@ table.properties th.light {
 
 table.properties td {
   text-align: right;
+}
+
+table.checkout {
+  border-collapse: collapse;
+  border-style: hidden;
+  margin-left: auto;
+  margin-right: auto;
+}
+table.checkout td, table.checkout th {
+  border-left: 2.42em solid transparent;
+}
+table.checkout .arrow {
+  border-left: 0.70em solid transparent;
 }
 
 .aside-content h2 {

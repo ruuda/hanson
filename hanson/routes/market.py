@@ -273,6 +273,9 @@ class OrderDetails:
     # accounts. Note that the cost may be negative!
     costs_shares: List[Decimal]
 
+    # The user's balance for every share account, before the order is executed.
+    balance_before: List[Shares]
+
     # The number of points we need to exchange for outcome shares to be able to
     # trade against the pool.
     cost_points: Points
@@ -390,6 +393,7 @@ class OrderDetails:
             pd_target=pd_target,
             costs_shares=costs,
             cost_points=cost,
+            balance_before=user_balances,
             max_spend=max_spend,
             close_position=False,
         )
@@ -447,6 +451,7 @@ class OrderDetails:
             pd_target=pd_after,
             costs_shares=costs,
             cost_points=cost,
+            balance_before=user_balances,
             max_spend=cost,
             close_position=True,
         )

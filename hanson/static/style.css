@@ -288,6 +288,10 @@ table.properties th {
   padding-right: 1.42rem;
 }
 
+table.properties th.light {
+  font-weight: inherit;
+}
+
 table.properties td {
   text-align: right;
 }

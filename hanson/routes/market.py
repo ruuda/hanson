@@ -23,6 +23,7 @@ from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome, Outcomes
 from hanson.models.user import User
+from hanson.models.performance import RealizedGains
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
 from hanson.models.probability import ProbabilityDistribution
@@ -145,6 +146,9 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     ]
 
     volume_total = market.get_trading_volume(tx, start_time=None, end_time=None)
+    realized_gains = RealizedGains.get_for_market_user(
+        tx, market_id=market_id, user_id=session_user.user.id
+    )
 
     # Probabilities are proportional to exp(-pool_balance) per share, for the
     # logarithmic market scoring rule.
@@ -224,6 +228,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             capitalization=points_account.balance,
             volume_total=volume_total,
             user_share_accounts=user_share_accounts,
+            realized_gains=realized_gains,
             graph=graph,
             zip=zip,
         )

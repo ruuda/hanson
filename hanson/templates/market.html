@@ -114,6 +114,14 @@
     {% else %}
     <p>You have no stakes in this market.</p>
     {% endif %}
+    <h2>Your performance</h2>
+    <table class="properties">
+      <tr>
+        <th class="light" title="Points gained from selling shares, minus points spent on buying shares.">Realized gains</th>
+        <!-- TODO: Color based on positive vs. negative -->
+        <td class="num">ℙ&nbsp;{{"{:,.2f}".format(realized_gains.realized_gains.amount)}}</td>
+      </tr>
+    </table>
   </div>
 </aside>
 {% endblock %}

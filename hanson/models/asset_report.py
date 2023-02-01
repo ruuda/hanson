@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, NamedTuple, Optional, cast
+from typing import Dict, List, NamedTuple, Optional, cast
 from collections import defaultdict
 from decimal import Decimal
 

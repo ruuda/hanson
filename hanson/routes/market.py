@@ -18,6 +18,7 @@ from flask import Blueprint, render_template, request
 
 from hanson.database import Transaction
 from hanson.http import Response
+from hanson.models import asset_report
 from hanson.models.currency import Points, Shares
 from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.market import Market
@@ -126,13 +127,13 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
 
     # We display a summary of the user's portfolio on the market page,
     # so get the user's own balances.
-    user_share_accounts = {
-        account.balance.outcome_id: account
-        for account in UserAccount.list_all_for_user_and_market(
-            tx,
-            session_user.user.id,
-            market_id,
-        )
+    user_share_accounts = UserAccount.list_all_for_user_and_market(
+        tx,
+        session_user.user.id,
+        market_id,
+    )
+    nonzero_user_share_accounts = {
+        account.balance.outcome_id: account for account in user_share_accounts
         if not account.balance.is_zero()
     }
 
@@ -155,6 +156,17 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
     numers = [math.exp(-pool_account.balance.amount) for pool_account in pool_accounts]
     denom = sum(numers)
     ps = [x / denom for x in numers]
+
+    # TODO: There is a lot of redundancy in this call, could we share the query
+    # data, separate the computation from the queries?
+    unrealized_gains: Points = asset_report.Post.for_market(
+        tx,
+        market_id,
+        balances=[
+            nonzero_user_share_accounts[outcome.id].balance if outcome.id in nonzero_user_share_accounts else Shares.zero(outcome.id)
+            for outcome in outcomes.outcomes
+        ]
+    ).market_value
 
     graph_range = request.args.get("graph_range") or "90d"
 
@@ -227,8 +239,10 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             probabilities=ps,
             capitalization=points_account.balance,
             volume_total=volume_total,
-            user_share_accounts=user_share_accounts,
+            user_share_accounts=nonzero_user_share_accounts,
             realized_gains=realized_gains,
+            unrealized_gains=unrealized_gains,
+            total_gains=realized_gains.realized_gains + unrealized_gains,
             graph=graph,
             zip=zip,
         )

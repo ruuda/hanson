@@ -7,9 +7,11 @@
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import List, NamedTuple
 from decimal import Decimal
 
+from hanson.models.account import UserAccount
+from hanson.models import asset_report
 from hanson.models.currency import Points
 from hanson.database import Transaction
 
@@ -74,8 +76,8 @@ class RealizedGains(NamedTuple):
                 and account_market.owner_market_id = %(market_id)s
             )
             select
-              (select sum(amount) from credits) as credit_amount,
-              (select sum(amount) from debits) as debit_amount;
+              coalesce((select sum(amount) from credits), 0.00) as credit_amount,
+              coalesce((select sum(amount) from debits), 0.00) as debit_amount;
             """,
             {
                 "market_id": market_id,

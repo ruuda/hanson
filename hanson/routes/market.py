@@ -287,13 +287,17 @@ class OrderDetails:
             for outcome in outcomes.outcomes
         ]
         user_accounts = [
-            UserAccount.expect_share_account(
+            UserAccount.get_share_account(
                 tx,
                 user_id=user_id,
                 market_id=market_id,
                 outcome_id=outcome.id,
             )
             for outcome in outcomes.outcomes
+        ]
+        user_balances = [
+            account.balance if account is not None else Shares.zero(outcome.id)
+            for account, outcome in zip(user_accounts, outcomes.outcomes)
         ]
 
         # Get the user's probabilities from the query parameters. There is nothing
@@ -326,8 +330,8 @@ class OrderDetails:
         # for some, the user may not have the shares. For those, we first have
         # to create them by exchanging points for shares.
         new_balances = [
-            account_i.balance.amount - cost_i
-            for cost_i, account_i in zip(costs, user_accounts)
+            balance_i.amount - cost_i
+            for cost_i, balance_i in zip(costs, user_balances)
         ]
 
         # If any balance would turn negative, we have to first exchange points

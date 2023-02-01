@@ -103,6 +103,7 @@ figcaption {
 input, label, textarea {
   padding: 0.2em;
   font-family: inherit;
+  font-size: inherit;
   color: inherit;
 }
 

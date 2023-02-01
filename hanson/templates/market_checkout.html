@@ -35,7 +35,11 @@
     {% for outcome, p_target in zip(order.outcomes.outcomes, order.pd_target.ps()) %}
     <input type="hidden" name="outcome{{outcome.id}}" value="{{'{:.3f}'.format(p_target)}}">
     {% endfor %}
+    {% if order.close_position %}
+    <input type="hidden" name="close_position" value="1">
+    {% else %}
     <input type="hidden" name="max_spend" value="{{'{:.2f}'.format(order.max_spend.amount)}}">
+    {% endif %}
     <input type="submit" value="Confirm Order">
   </form>
 </div>

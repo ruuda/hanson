@@ -133,7 +133,8 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         market_id,
     )
     nonzero_user_share_accounts = {
-        account.balance.outcome_id: account for account in user_share_accounts
+        account.balance.outcome_id: account
+        for account in user_share_accounts
         if not account.balance.is_zero()
     }
 
@@ -163,9 +164,11 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         tx,
         market_id,
         balances=[
-            nonzero_user_share_accounts[outcome.id].balance if outcome.id in nonzero_user_share_accounts else Shares.zero(outcome.id)
+            nonzero_user_share_accounts[outcome.id].balance
+            if outcome.id in nonzero_user_share_accounts
+            else Shares.zero(outcome.id)
             for outcome in outcomes.outcomes
-        ]
+        ],
     ).market_value
 
     graph_range = request.args.get("graph_range") or "90d"
@@ -277,6 +280,9 @@ class OrderDetails:
     # The maximum number of points that the user wanted to spend.
     max_spend: Points
 
+    # Whether the order is an order to close the position.
+    close_position: bool
+
     @staticmethod
     def from_request(
         tx: Transaction, user_id: int, market_id: int
@@ -292,14 +298,22 @@ class OrderDetails:
         if market is None:
             return Response.not_found("This market does not exist.")
 
+        if (
+            request.args.get("close_position") is not None
+            or request.form.get("close_position") is not None
+        ):
+            return OrderDetails.for_close_position(tx, market, user_id)
+
         try:
             v = request.args.get("max_spend") or request.form.get("max_spend") or "0.00"
             max_spend = Points(Decimal(v))
         except ValueError:
             return Response.bad_request("Invalid max_spend amount.")
 
-        if max_spend <= Points.zero():
-            return Response.bad_request("Invalid max_spend amount, must be positive.")
+        if max_spend < Points.zero():
+            return Response.bad_request(
+                "Invalid max_spend amount, must be non-negative."
+            )
 
         outcomes = Outcome.get_all_by_market(tx, market_id)
 
@@ -377,6 +391,64 @@ class OrderDetails:
             costs_shares=costs,
             cost_points=cost,
             max_spend=max_spend,
+            close_position=False,
+        )
+
+    @staticmethod
+    def for_close_position(
+        tx: Transaction,
+        market: Market,
+        user_id: int,
+    ) -> OrderDetails:
+        """
+        Return the order that would reduce a user's share balance to zero for
+        all of the user's share accounts in the given market.
+        """
+        outcomes = Outcome.get_all_by_market(tx, market.id)
+
+        pool_accounts = [
+            MarketAccount.expect_pool_account(tx, market.id, outcome.id)
+            for outcome in outcomes.outcomes
+        ]
+        user_accounts = [
+            UserAccount.get_share_account(
+                tx,
+                user_id=user_id,
+                market_id=market.id,
+                outcome_id=outcome.id,
+            )
+            for outcome in outcomes.outcomes
+        ]
+        user_balances = [
+            account.balance if account is not None else Shares.zero(outcome.id)
+            for account, outcome in zip(user_accounts, outcomes.outcomes)
+        ]
+
+        pd_before = ProbabilityDistribution.from_pool_balances(
+            [a.balance for a in pool_accounts]
+        )
+        pd_after = ProbabilityDistribution.from_pool_balances(
+            [pa.balance + ub for pa, ub in zip(pool_accounts, user_balances)]
+        )
+        costs = pd_before.cost_for_update(pd_after)
+        costs = [math.ceil(x * 100) / Decimal("100.00") for x in costs]
+
+        # What we receive back from the AMM is a negative cost. After the trade,
+        # we will have the same balance in all share accounts, equal to minus
+        # this amount.
+        cost = Points(min(costs))
+        costs = [ub.amount + cost.amount for ub in user_balances]
+
+        return OrderDetails(
+            market=market,
+            outcomes=outcomes,
+            pd_before=pd_before,
+            pd_after=pd_after,
+            pd_target=pd_after,
+            costs_shares=costs,
+            cost_points=cost,
+            max_spend=cost,
+            close_position=True,
         )
 
 

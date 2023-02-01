@@ -116,7 +116,10 @@ class Post(NamedTuple):
         total_market_value = cast(
             Points, sum(entry.market_value for entry in entries) or Points.zero()
         )
-        max_value: Points = max(entry.max_value for entry in entries)
+
+        max_value = Points.zero()
+        if len(entries) > 0:
+            max_value = max(entry.max_value for entry in entries)
 
         return Post(
             name=market.title,
@@ -158,6 +161,7 @@ class AssetReport(NamedTuple):
             *(
                 Post.for_market(tx, market_id, balances)
                 for market_id, balances in markets.items()
+                if not all(balance.is_zero() for balance in balances)
             ),
         ]
 

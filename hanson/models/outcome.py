@@ -141,11 +141,7 @@ class Outcome:
         Return a toned-down color that has good enough contrast to be usable in
         the UI. Returns the html-formatted hex color.
         """
-        return (
-            self.color.clamp_saturation(0.2, 0.6)
-            .clamp_lightness(0.5, 0.6)
-            .to_html_hex()
-        )
+        return self.color.clamp_for_ui().to_html_hex()
 
 
 @dataclass(frozen=True)

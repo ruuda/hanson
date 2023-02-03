@@ -104,20 +104,18 @@ def cieluv_to_xyz(l_s: float, u_s: float, v_s: float) -> Vec3:
 
 def cieluv_to_cielch(l_s: float, u_s: float, v_s: float) -> Vec3:
     """
-    Convert CIELUV to CIELCh. Returns (C*_uv, h_uv, s_uv).
+    Convert CIELUV to CIELCh. Returns (L*, C*_uv, h_uv).
     h is in the range [0, 2pi].
     """
     c_s = math.hypot(u_s, v_s)
     h = math.atan2(v_s, u_s)
-    s = c_s / l_s
-    return c_s, h, s
+    return l_s, c_s, h
 
 
-def cielch_to_cieluv(c_s: float, h: float, s: float) -> Vec3:
+def cielch_to_cieluv(l_s: float, c_s: float, h: float) -> Vec3:
     """
     Inverse of `cieluv_to_cielch`.
     """
-    l_s = c_s / s
     u_s = math.cos(h) * c_s
     v_s = math.sin(h) * c_s
     return l_s, u_s, v_s
@@ -188,14 +186,30 @@ class Color(NamedTuple):
             linear_to_srgb(b),
         )
 
-    def clamp_saturation(self, min_saturation: float, max_saturation: float) -> Color:
-        h, l, s = colorsys.rgb_to_hls(*self.to_rgb_floats())
-        s = min(max_saturation, max(min_saturation, s))
-        r, g, b = colorsys.hls_to_rgb(h, l, s)
-        return Color.from_rgb_floats(r, g, b)
+    def to_cieluv(self) -> Vec3:
+        r, g, b = self.to_rgb_floats()
+        return xyz_to_cieluv(
+            *linear_rgb_to_xyz(
+                srgb_to_linear(r),
+                srgb_to_linear(g),
+                srgb_to_linear(b),
+            )
+        )
 
-    def clamp_lightness(self, min_lightness: float, max_lightness: float) -> Color:
-        h, l, s = colorsys.rgb_to_hls(*self.to_rgb_floats())
-        l = min(max_lightness, max(min_lightness, l))
-        r, g, b = colorsys.hls_to_rgb(h, l, s)
-        return Color.from_rgb_floats(r, g, b)
+    @staticmethod
+    def from_cieluv(l_s: float, u_s: float, v_s: float) -> Color:
+        r, g, b = xyz_to_linear_rgb(*cieluv_to_xyz(l_s, u_s, v_s))
+        return Color.from_rgb_floats(
+            linear_to_srgb(r),
+            linear_to_srgb(g),
+            linear_to_srgb(b),
+        )
+
+    def clamp_for_ui(self) -> Color:
+        """
+        Limit saturation and lightness to make the color suitable for usage in the UI.
+        """
+        l, c, h = self.to_cielch()
+        l = max(45, min(65, l))
+        c = max(50, min(65, c))
+        return Color.from_cielch(l, c, h)

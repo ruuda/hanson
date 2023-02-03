@@ -65,3 +65,20 @@ def test_cieluv_to_cielch_roundtrip() -> None:
         for yi in range(1, 50):
             for zi in range(1, 50):
                 assert roundtrip_diff((xi / 50, yi / 50, zi / 50)) < 1e-5
+
+
+def test_color_to_cielch_roundtrip() -> None:
+    def roundtrip(c: Color) -> Color:
+        return Color.from_cielch(*c.to_cielch())
+
+    for r in range(1, 255):
+        for g in range(1, 255, 10):
+            for b in range(1, 255, 10):
+                c = Color(r, g, b)
+                d = roundtrip(c)
+                # The conversion is not exact, mostly due to the sRGB
+                # part missing some decimals on my part.
+                assert sum(abs(ci - di) for ci, di in zip(c, d)) < 3
+
+
+def test_color_to_cielch_roundtrip() -> None:

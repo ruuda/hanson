@@ -7,10 +7,11 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
+from typing import Iterable, List, NamedTuple, Optional, Union
 from datetime import datetime
 from dataclasses import dataclass
 
+from hanson.models.color import Color
 from hanson.database import Transaction
 
 
@@ -19,14 +20,14 @@ class Outcome:
     id: int
     market_id: int
     name: str
-    color: str
+    color: Color
 
     @staticmethod
     def create_discrete(
         tx: Transaction,
         market_id: int,
         name: str,
-        color: str,
+        color: Color,
     ) -> OutcomeDiscrete:
         outcome_id: int = tx.execute_fetch_scalar(
             """
@@ -34,7 +35,7 @@ class Outcome:
             VALUES (%s, %s, %s)
             RETURNING id;
             """,
-            (market_id, name, color),
+            (market_id, name, color.to_html_hex()),
         )
         return OutcomeDiscrete(outcome_id, market_id, name, color)
 
@@ -43,7 +44,7 @@ class Outcome:
         tx: Transaction,
         market_id: int,
         name: str,
-        color: str,
+        color: Color,
         value: float,
     ) -> OutcomeFloat:
         outcome_id: int = tx.execute_fetch_scalar(
@@ -52,7 +53,7 @@ class Outcome:
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
-            (market_id, name, color, value),
+            (market_id, name, color.to_html_hex(), value),
         )
         return OutcomeFloat(outcome_id, market_id, name, color, value)
 
@@ -61,7 +62,7 @@ class Outcome:
         tx: Transaction,
         market_id: int,
         name: str,
-        color: str,
+        color: Color,
         value: datetime,
     ) -> OutcomeDatetime:
         assert value.tzinfo is not None
@@ -71,7 +72,7 @@ class Outcome:
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,
-            (market_id, name, color, value),
+            (market_id, name, color.to_html_hex(), value),
         )
         return OutcomeDatetime(outcome_id, market_id, name, color, value)
 
@@ -85,10 +86,10 @@ class Outcome:
         """
         id: int
         name: str
-        color: str
+        color_hex: str
         value_float: Optional[float]
         value_datetime: Optional[datetime]
-        for id, name, color, value_float, value_datetime in tx.execute_fetch_all(
+        for id, name, color_hex, value_float, value_datetime in tx.execute_fetch_all(
             """
             SELECT
               id,
@@ -105,6 +106,8 @@ class Outcome:
             """,
             (market_id,),
         ):
+            color = Color.from_html_hex(color_hex)
+
             if value_float is not None:
                 yield OutcomeFloat(id, market_id, name, color, value_float)
             elif value_datetime is not None:
@@ -132,6 +135,17 @@ class Outcome:
         else:
             assert all(isinstance(oc, OutcomeDiscrete) for oc in outcomes)
             return OutcomesDiscrete(outcomes)  # type: ignore[arg-type]
+
+    def get_sanitized_color(self) -> str:
+        """
+        Return a toned-down color that has good enough contrast to be usable in
+        the UI. Returns the html-formatted hex color.
+        """
+        return (
+            self.color.clamp_saturation(0.2, 0.6)
+            .clamp_lightness(0.5, 0.6)
+            .to_html_hex()
+        )
 
 
 @dataclass(frozen=True)

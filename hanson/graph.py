@@ -137,7 +137,7 @@ def render_graph(
             result.append(
                 f'<rect x="{x - 0.5 - bar_width / 2:.2f}" y="{start_y:.3f}" '
                 f'width="{bar_width:.2f}" height="{height:.3f}" '
-                f'fill="{outcome.color}"></rect>'
+                f'fill="{outcome.get_sanitized_color()}"></rect>'
             )
             start_y += p * axis_height
 

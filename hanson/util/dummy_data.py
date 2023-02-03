@@ -16,6 +16,7 @@ from hanson.database import Transaction, connect_default
 from hanson.models.currency import Points
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
+from hanson.models.color import Color
 from hanson.models.session import Session
 from hanson.models.transaction import (
     create_transaction_income,
@@ -60,8 +61,8 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
                 """,
             ),
         )
-        Outcome.create_discrete(tx, market.id, "Yes", "#68a223")
-        Outcome.create_discrete(tx, market.id, "No", "#a22a17")
+        Outcome.create_discrete(tx, market.id, "Yes", Color.from_html_hex("#68a223"))
+        Outcome.create_discrete(tx, market.id, "No", Color.from_html_hex("#a22a17"))
         create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
@@ -77,9 +78,11 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
                 """,
             ),
         )
-        Outcome.create_discrete(tx, market.id, "Peanut butter", "#b58800")
-        Outcome.create_discrete(tx, market.id, "Cheese", "#d2bb00")
-        Outcome.create_discrete(tx, market.id, "Ham", "#d58b8b")
+        Outcome.create_discrete(
+            tx, market.id, "Peanut butter", Color.from_html_hex("#b58800")
+        )
+        Outcome.create_discrete(tx, market.id, "Cheese", Color.from_html_hex("#d2bb00"))
+        Outcome.create_discrete(tx, market.id, "Ham", Color.from_html_hex("#d58b8b"))
         create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 
@@ -98,12 +101,22 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
         # TODO: Should all outcomes have a name? Maybe float and datetime outcomes
         # should be named by the system instead.
         t = datetime(2022, 6, 1, 0, 0, 0, tzinfo=timezone.utc)
-        Outcome.create_datetime(tx, market.id, "2022-06", "#ff0000", t)
         Outcome.create_datetime(
-            tx, market.id, "2023-06", "#880088", t.replace(year=2023)
+            tx, market.id, "2022-06", Color.from_html_hex("#ff0000"), t
         )
         Outcome.create_datetime(
-            tx, market.id, "2024-06", "#0000ff", t.replace(year=2024)
+            tx,
+            market.id,
+            "2023-06",
+            Color.from_html_hex("#880088"),
+            t.replace(year=2023),
+        )
+        Outcome.create_datetime(
+            tx,
+            market.id,
+            "2024-06",
+            Color.from_html_hex("#0000ff"),
+            t.replace(year=2024),
         )
         create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
@@ -121,10 +134,10 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
                 """,
             ),
         )
-        Outcome.create_float(tx, market.id, "0.2", "#ff0000", 0.2)
-        Outcome.create_float(tx, market.id, "0.5", "#aa0022", 0.5)
-        Outcome.create_float(tx, market.id, "1.0", "#2200aa", 1.0)
-        Outcome.create_float(tx, market.id, "2.0", "#0000ff", 2.0)
+        Outcome.create_float(tx, market.id, "0.2", Color.from_html_hex("#ff0000"), 0.2)
+        Outcome.create_float(tx, market.id, "0.5", Color.from_html_hex("#aa0022"), 0.5)
+        Outcome.create_float(tx, market.id, "1.0", Color.from_html_hex("#2200aa"), 1.0)
+        Outcome.create_float(tx, market.id, "2.0", Color.from_html_hex("#0000ff"), 2.0)
         create_transaction_fund_market(tx, user.id, market.id, Points(Decimal("2.00")))
         markets.append(market)
 

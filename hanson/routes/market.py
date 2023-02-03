@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import math
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -16,21 +15,22 @@ from typing import List, Optional, Tuple
 
 from flask import Blueprint, render_template, request
 
+import hanson.models.transaction as transaction
 from hanson.database import Transaction
+from hanson.graph import render_graph
 from hanson.http import Response
 from hanson.models import asset_report
-from hanson.models.currency import Points, Shares
 from hanson.models.account import MarketAccount, UserAccount
+from hanson.models.color import Color
+from hanson.models.currency import Points, Shares
+from hanson.models.history import ProbabilityHistory
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome, Outcomes
-from hanson.models.user import User
 from hanson.models.performance import RealizedGains
+from hanson.models.probability import ProbabilityDistribution
+from hanson.models.user import User
 from hanson.util.decorators import with_tx
 from hanson.util.session import get_session_user
-from hanson.models.probability import ProbabilityDistribution
-import hanson.models.transaction as transaction
-from hanson.models.history import ProbabilityHistory
-from hanson.graph import render_graph
 
 app = Blueprint(name="market", import_name=__name__)
 
@@ -78,12 +78,15 @@ def route_post_market_new(tx: Transaction) -> Response:
     title = title.replace("\r", "").strip()
     description = description.replace("\r", "").strip()
 
-    outcome_descriptions: List[Tuple[str, str]] = []
+    outcome_descriptions: List[Tuple[str, Color]] = []
     for i in range(0, 5):
         label: Optional[str] = request.form.get(f"label{i}")
-        color = request.form.get(f"color{i}")
+        color_hex = request.form.get(f"color{i}")
         if label is not None and len(label) > 0:
-            if color is None or len(color) != 7:
+            try:
+                assert color_hex is not None
+                color = Color.from_html_hex(color_hex)
+            except:
                 return Response.bad_request("Invalid or missing 'color'.")
             label = label.strip()
             outcome_descriptions.append((label, color))

@@ -81,7 +81,7 @@
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
       <div
               class="outcome"
-              style="background-color: {{outcome.color}}"
+              style="background-color: {{outcome.get_sanitized_color()}}"
               title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
       ></div>
     {% endfor %}
@@ -89,11 +89,11 @@
     <table class="properties">
       {% for outcome, p in zip(outcomes.outcomes, probabilities) %}
       <tr
-          style="color: {{outcome.color}}"
+          style="color: {{outcome.get_sanitized_color()}}"
           title="{{outcome.name}}: {{"{:.1f}%".format(p * 100.0)}}"
       >
         <th class="outcome-label">{{outcome.name}}</th>
-        <td class="num" style="color: {{outcome.color}}">ℙ&nbsp;{{"{:.2f}".format(p)}}</td>
+        <td class="num" style="color: {{outcome.get_sanitized_color()}}">ℙ&nbsp;{{"{:.2f}".format(p)}}</td>
       </tr>
       {% endfor %}
     </table>
@@ -102,9 +102,9 @@
     <table class="properties">
       {% for outcome in outcomes.outcomes %}
       {% if outcome.id in user_share_accounts %}
-      <tr style="color: {{outcome.color}}">
+      <tr style="color: {{outcome.get_sanitized_color()}}">
         <th class="outcome-label">{{outcome.name}}</th>
-        <td class="num" style="color: {{outcome.color}}">{{
+        <td class="num" style="color: {{outcome.get_sanitized_color()}}">{{
           "{:.2f}".format(user_share_accounts[outcome.id].balance.amount)
           }}</td>
       </tr>

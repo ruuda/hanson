@@ -8,8 +8,9 @@
 from __future__ import annotations
 
 from typing import NamedTuple, Tuple
-import colorsys
 
+import colorsys
+import math
 
 Vec3 = Tuple[float, float, float]
 
@@ -101,8 +102,32 @@ def cieluv_to_xyz(l_s: float, u_s: float, v_s: float) -> Vec3:
     return x, y, z
 
 
+def cieluv_to_cielch(l_s: float, u_s: float, v_s: float) -> Vec3:
+    """
+    Convert CIELUV to CIELCh. Returns (C*_uv, h_uv, s_uv).
+    h is in the range [0, 2pi].
+    """
+    c_s = math.hypot(u_s, v_s)
+    h = math.atan2(v_s, u_s)
+    s = c_s / l_s
+    return c_s, h, s
+
+
+def cielch_to_cieluv(c_s: float, h: float, s: float) -> Vec3:
+    """
+    Inverse of `cieluv_to_cielch`.
+    """
+    l_s = c_s / s
+    u_s = math.cos(h) * c_s
+    v_s = math.sin(h) * c_s
+    return l_s, u_s, v_s
+
+
 class Color(NamedTuple):
-    # Color values ranging from 0 to 255.
+    """
+    A sRGB color with integer components in [0, 255].
+    """
+
     r: int
     g: int
     b: int
@@ -140,6 +165,27 @@ class Color(NamedTuple):
             min(255, max(0, int(r * 255.0))),
             min(255, max(0, int(g * 255.0))),
             min(255, max(0, int(b * 255.0))),
+        )
+
+    def to_cielch(self) -> Vec3:
+        r, g, b = self.to_rgb_floats()
+        return cieluv_to_cielch(
+            *xyz_to_cieluv(
+                *linear_rgb_to_xyz(
+                    srgb_to_linear(r),
+                    srgb_to_linear(g),
+                    srgb_to_linear(b),
+                )
+            )
+        )
+
+    @staticmethod
+    def from_cielch(c_s: float, h: float, s: float) -> Color:
+        r, g, b = xyz_to_linear_rgb(*cieluv_to_xyz(*cielch_to_cieluv(c_s, h, s)))
+        return Color.from_rgb_floats(
+            linear_to_srgb(r),
+            linear_to_srgb(g),
+            linear_to_srgb(b),
         )
 
     def clamp_saturation(self, min_saturation: float, max_saturation: float) -> Color:

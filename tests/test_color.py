@@ -54,3 +54,14 @@ def test_xyz_to_cieluv_roundtrip() -> None:
         for yi in range(1, 50):
             for zi in range(1, 50):
                 assert roundtrip_diff((xi / 50, yi / 50, zi / 50)) < 1e-5
+
+
+def test_cieluv_to_cielch_roundtrip() -> None:
+    def roundtrip_diff(v: Vec3) -> float:
+        w = color.cielch_to_cieluv(*color.cieluv_to_cielch(*v))
+        return sum(abs(vi - wi) for vi, wi in zip(v, w))
+
+    for xi in range(1, 50):
+        for yi in range(1, 50):
+            for zi in range(1, 50):
+                assert roundtrip_diff((xi / 50, yi / 50, zi / 50)) < 1e-5

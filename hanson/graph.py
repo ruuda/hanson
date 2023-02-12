@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Iterable, List, NamedTuple, Optional
+from typing import Dict, Iterable, List, NamedTuple, Optional
 
 from hanson.models.history import ProbabilityHistory
 from hanson.models.outcome import Outcome
@@ -113,6 +113,8 @@ def render_graph(
     tick_format = TickFormat.time_axis_ticks(time_ticks)
     origin_tick = tick_format.origin.timestamp() // bin_size_secs
 
+    polylines: Dict[int, List[str]] = {}
+
     while current_tick > start_tick:
         current_time, current_ps = ps_history.history[current_elem]
 
@@ -133,9 +135,13 @@ def render_graph(
             result.append(
                 f'<rect x="{x - 0.5 - bar_width / 2:.2f}" y="{start_y:.3f}" '
                 f'width="{bar_width:.2f}" height="{height:.3f}" '
-                f'fill="{outcome.get_sanitized_color()}"></rect>'
+                f'fill="{outcome.get_sanitized_color()}" opacity="0.3"></rect>'
             )
             start_y += p * axis_height
+
+            polyline = polylines.setdefault(outcome.id, [])
+            polyline.append(f"{x:.2f},{start_y - height:.3f}")
+
 
         t = datetime.fromtimestamp(current_tick * bin_size_secs, tz=timezone.utc)
         if (current_tick - origin_tick) % 4 == 0:
@@ -150,6 +156,17 @@ def render_graph(
             )
 
         current_tick -= 1
+
+    for outcome in outcomes:
+        points = " ".join(polylines[outcome.id])
+        color = outcome.get_sanitized_color()
+        result.append(
+            f'<polyline points="{points}" '
+            f'fill="none" stroke="{color}" '
+            'stroke-width="0.15" '
+            'stroke-linejoin="round" '
+            '/>'
+        )
 
     result.append("</svg>")
     return "\n".join(result)

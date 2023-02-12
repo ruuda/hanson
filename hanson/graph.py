@@ -106,11 +106,7 @@ def render_graph(
         f"""<svg version="1.1" xmlns="xmlns="http://www.w3.org/2000/svg" width="100%" height="18em" viewbox="0 0 {num_ticks} {graph_height:.3f}">"""
     )
 
-    prev_x = 0
-    prev_pd = None
-
     current_tick = end_tick
-    current_time = end_time
     current_elem = len(ps_history.history) - 1
 
     time_ticks = [t for t, ps in ps_history.history]

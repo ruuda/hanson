@@ -298,6 +298,7 @@ table.properties th.light {
 
 table.properties td {
   text-align: right;
+  vertical-align: top;
 }
 
 table.checkout {

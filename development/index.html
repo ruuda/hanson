@@ -9,13 +9,13 @@
   -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>index — Hanson</title>
+  <title>Development guide — Hanson</title>
   <!-- Out of the options of rsms.me + Google Fonts, self-hosting, and only
     Google Fonts, the latter is by far the fastest when the docs themselves are
     not on a CDN, even though it's two additional domains to connect to. -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital@0;1&display=swap" rel="stylesheet">
-  <link href="https://docs.ruuda.nl/hanson/" rel="canonical">
+  <link href="https://docs.ruuda.nl/hanson/development/" rel="canonical">
   <style>
   /* Inter font family, copyright Rasmus Andersson, licensed under SIL OFL 1.1,
      see https://rsms.me/inter and https://rsms.me/inter/inter.css. */
@@ -400,45 +400,109 @@
     <div id="main">
       <nav id="breadcrumbs">
         <a href="https://docs.ruuda.nl/hanson/">Hanson</a>
-         › <a href=".">Overview</a> 
-        
+         › <a href="./">Development</a> 
+         › <a href="./">Development guide</a> 
         <a id="repo-link" href="https://github.com/ruuda/hanson/">GitHub</a>
       </nav>
       <article>
-        <h1 id="hanson">Hanson<a class="headerlink" href="#hanson">&para;</a></h1>
-<p>Hanson is a <a href="https://en.wikipedia.org/wiki/Prediction_market">prediction market</a> app.</p>
-<ul>
-<li>Self-hosted, free and open-source software.</li>
-<li>No real money, users trade virtual internet points.</li>
-<li>Designed for running internal prediction markets in organizations.</li>
-</ul>
+        <h1 id="development-guide">Development guide<a class="headerlink" href="#development-guide">&para;</a></h1>
+<p>Hanson is written in Python and uses Postgres as its database.</p>
+<h2 id="development-environment">Development environment<a class="headerlink" href="#development-environment">&para;</a></h2>
+<p>To enter a development environment with the right version of Postgres, Python,
+Python packages, and axiliary tools in scope, you can use <a href="https://nixos.org/download.html">Nix</a> version
+<a href="https://releases.nixos.org/?prefix=nix/nix-2.11.0/">2.11</a>. If you haven’t already, enable <a href="https://nixos.wiki/wiki/Flakes">flake support</a> by
+adding the following line to your <code>~/.config/nix/nix.conf</code>:</p>
+<pre><code>experimental-features = nix-command flakes
+</code></pre>
+<p>Then enter a development shell with</p>
+<pre><code>nix develop --command $SHELL
+</code></pre>
+<h2 id="database-setup">Database setup<a class="headerlink" href="#database-setup">&para;</a></h2>
+<p>The development environment includes a pinned version of Postgres. The script
+<code>tools/run_postgres.py</code> starts a sufficiently configured Postgres process that
+listens on a domain socket. Start one that puts its data in <code>run/db_dev</code>:</p>
+<pre><code>tools/run_postgres.py --force-init run/db_dev
+</code></pre>
+<p>Then in a different shell, perform the initial setup that creates the database
+and users, and then run all migrations to populate the schema:</p>
+<pre><code>export PGHOST="$PWD/run/db_dev"
+tools/migrate.py setup
+tools/migrate.py migrate latest
+</code></pre>
+<p>After this you can Ctrl + C the Postgres process in the other shell. You will
+not need to start it manually any more, see also <a href="#runing-the-application"><em>Running the
+application</em></a> below.</p>
+<p>The development shell by defaults sets the <code>PGDATABASE</code>, <code>PGUSER</code>, and
+<code>PGPASSWORD</code> environment variables. If you export <code>PGHOST=$PWD/run/db_dev</code>,
+then <code>psql</code> can be used directly to inspect the database.</p>
+<h2 id="migrations">Migrations<a class="headerlink" href="#migrations">&para;</a></h2>
+<p>The repository includes a simple migration tool, <code>tools/migrate.py</code>. It loads
+migrations from the <code>migrations</code> directory.</p>
+<p>Migrations must be <code>.sql</code> files whose filename starts with a 4-digit sequence
+number. Each constists of an upgrade and downgrade section as indicated with a
+comment:</p>
+<pre><code class="language-sql">-- migrate:up
+CREATE TABLE &quot;...&quot;;
+
+-- migrate:down
+DROP TABLE &quot;...&quot;;
+</code></pre>
+<p>The migration tool stores the current schema version in the <code>_schema_migrations</code>
+table. Run <code>tools/migrate.py --help</code> for more information.</p>
+<h2 id="running-the-application">Running the application<a class="headerlink" href="#running-the-application">&para;</a></h2>
+<p>The repository contains a <a href="https://ddollar.github.io/foreman/#PROCFILE">Procfile</a> that defines all processes needed
+to run Hanson (Postgres and Flask). The development environment includes
+<a href="https://github.com/DarthSim/overmind">Overmind</a> which can start all processes in the Procfile, and which
+interleaves their output on stdout. To bring everything up:</p>
+<pre><code>overmind start
+</code></pre>
+<p>By default Flask listens on <code>localhost:5000</code>.</p>
+<h2 id="running-tests">Running tests<a class="headerlink" href="#running-tests">&para;</a></h2>
+<p>Run the tests:</p>
+<pre><code>python -m pytest tests
+</code></pre>
+<p>The tests will use an independent database at <code>run/db_test</code>, so the tests do not
+interfere with the development database. The tests start this Postgres instance
+in the test fixture, so this does not depend on any daemon to be running.</p>
+<h2 id="typechecking">Typechecking<a class="headerlink" href="#typechecking">&para;</a></h2>
+<p>Typecheck with <a href="https://mypy-lang.org/">Mypy</a>:</p>
+<pre><code>mypy --strict hanson tools tests
+</code></pre>
       </article>
       <nav id="nav-prev-next">
-        <a id="nav-next" href="assets/" title="Assets">Next</a>
+        <a id="nav-prev" href="../transactions/" title="Transactions">Previous</a>
         </nav>
       </div>
     <aside>
       <nav>
         <ul>
         <li class="toc-section
-             current"><a href=".">Overview</a></li>
+            "><a href="..">Overview</a></li>
           <li class="toc-section
-            "><a href="assets/">User guide</a></li>
+            "><a href="../assets/">User guide</a></li>
           
             <li class="toc-chapter
-              "><a href="assets/">Assets</a></li>
+              "><a href="../assets/">Assets</a></li>
             
             <li class="toc-chapter
-              "><a href="accounts/">Accounts</a></li>
+              "><a href="../accounts/">Accounts</a></li>
             
             <li class="toc-chapter
-              "><a href="transactions/">Transactions</a></li>
+              "><a href="../transactions/">Transactions</a></li>
             <li class="toc-section
-            "><a href="development/">Development</a></li>
+            "><a href="./">Development</a></li>
           
             <li class="toc-chapter
-              "><a href="development/">Development guide</a></li>
-            </ul>
+               current"><a href="./">Development guide</a></li>
+            <li><ul>
+                <li class="toc-heading"><a href="#development-environment">Development environment</a></li>
+                <li class="toc-heading"><a href="#database-setup">Database setup</a></li>
+                <li class="toc-heading"><a href="#migrations">Migrations</a></li>
+                <li class="toc-heading"><a href="#running-the-application">Running the application</a></li>
+                <li class="toc-heading"><a href="#running-tests">Running tests</a></li>
+                <li class="toc-heading"><a href="#typechecking">Typechecking</a></li>
+                </ul></li>
+               </ul>
       </nav>
     </aside>
   </div>

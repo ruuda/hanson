@@ -71,7 +71,13 @@ interleaves their output on stdout. To bring everything up:
 
     overmind start
 
-By default Flask listens on `localhost:5000`.
+By default Flask listens on `localhost:5000`. However, the database does not
+contain any users or interesting data. To fill it with two dummy users and a few
+demo markets, use the dummy data script:
+
+    hanson/util/dummy_data.py
+
+After this you can log in as `henk` or `piet`.
 
 [procfile]: https://ddollar.github.io/foreman/#PROCFILE
 [overmind]: https://github.com/DarthSim/overmind

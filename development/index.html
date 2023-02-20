@@ -456,7 +456,12 @@ to run Hanson (Postgres and Flask). The development environment includes
 interleaves their output on stdout. To bring everything up:</p>
 <pre><code>overmind start
 </code></pre>
-<p>By default Flask listens on <code>localhost:5000</code>.</p>
+<p>By default Flask listens on <code>localhost:5000</code>. However, the database does not
+contain any users or interesting data. To fill it with two dummy users and a few
+demo markets, use the dummy data script:</p>
+<pre><code>hanson/util/dummy_data.py
+</code></pre>
+<p>After this you can log in as <code>henk</code> or <code>piet</code>.</p>
 <h2 id="running-tests">Running tests<a class="headerlink" href="#running-tests">&para;</a></h2>
 <p>Run the tests:</p>
 <pre><code>python -m pytest tests

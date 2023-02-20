@@ -79,6 +79,3 @@ def test_color_to_cielch_roundtrip() -> None:
                 # The conversion is not exact, mostly due to the sRGB
                 # part missing some decimals on my part.
                 assert sum(abs(ci - di) for ci, di in zip(c, d)) < 3
-
-
-def test_color_to_cielch_roundtrip() -> None:

@@ -2,9 +2,16 @@ site_name: Hanson
 site_url: https://docs.ruuda.nl/hanson/
 repo_url: https://github.com/ruuda/hanson
 strict: true
+
 theme:
   name: null
   custom_dir: docs/theme
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      permalink_title: null
+
 nav:
   - Overview:
     - index: index.md
@@ -12,3 +19,5 @@ nav:
     - Assets: assets.md
     - Accounts: accounts.md
     - Transactions: transactions.md
+  - Development:
+    - Development guide: development.md

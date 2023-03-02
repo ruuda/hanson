@@ -46,6 +46,7 @@ def main() -> None:
     import textwrap
 
     if len(sys.argv) != 2:
+        assert main.__doc__ is not None
         print(textwrap.dedent(main.__doc__).strip())
         print("\nUsage: app.py <config-toml>")
         sys.exit(1)

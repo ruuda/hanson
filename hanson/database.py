@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import os.path
 from typing import (
     Any,
     Dict,
@@ -24,6 +25,9 @@ from typing import (
 import psycopg2.extensions  # type: ignore
 import psycopg2.extras  # type: ignore
 import psycopg2.pool  # type: ignore
+
+
+from hanson.models.config import Config
 
 
 # If we return `Optional[Tuple[Any, ...]]` from functions that return a row,
@@ -155,6 +159,18 @@ class ConnectionPool(NamedTuple):
             self.pool.putconn(conn, close=False)
 
 
+def connect_config(config: Config) -> ConnectionPool:
+    pg = config.postgres
+    return ConnectionPool.new(
+        database=pg.database,
+        user=pg.user,
+        password=pg.password,
+        # Convert to an absolute path, because Postgres can only connect to a
+        # Unix socket if it's an absolute path.
+        host=os.path.abspath(pg.host),
+    )
+
+
 def connect_default() -> ConnectionPool:
     return ConnectionPool.new(
         database="hanson",
@@ -168,13 +184,14 @@ def get_context_connection() -> ConnectionPool:
     """
     Return the global database connection associated with the Flask app.
     """
-    from flask import _app_ctx_stack
+    from flask import _app_ctx_stack, current_app
 
     ctx = _app_ctx_stack.top
     assert ctx is not None, "Must be called from within a Flask context."
 
     if not hasattr(ctx, "db_connection"):
-        ctx.db_connection = connect_default()
+        config: Config = current_app.config["hanson_config"]
+        ctx.db_connection = connect_config(config)
 
     conn: ConnectionPool = ctx.db_connection
     return conn

@@ -7,25 +7,28 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tomllib
+import dataclasses
 
-from typing import NamedTuple
 
-
-class PostgresConfig(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class PostgresConfig:
     database: str
     user: str
     password: str
     host: str
 
 
-class ServerConfig(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class ServerConfig:
     host: str
     port: int
 
 
-class Config(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class Config:
     postgres: PostgresConfig
     server: ServerConfig
 
@@ -48,3 +51,11 @@ class Config(NamedTuple):
                 postgres=PostgresConfig(**raw["postgres"]),
                 server=ServerConfig(**raw["server"]),
             )
+
+    def format_echo(self) -> str:
+        """
+        Pretty-print the configuration for humans to inspect. Omits the password.
+        """
+        as_dict = dataclasses.asdict(self)
+        as_dict["postgres"]["password"] = "(redacted)"
+        return json.dumps(as_dict, indent=2)

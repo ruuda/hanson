@@ -10,12 +10,8 @@ another through _transactions_. There are several types of transactions:
    have the right outcome shares to pay with, then they need to perform an
    exchange transaction before the trade. The system will do this automatically.
    Similarly, after a trade, a user might end up with a complete set of outcome
-   shares. The system automatically exchanges those back to points. This ensures
-   that only users who have a position in the market benefit from subsidies.
-   Exchange is only possible for markets that are not yet resolved.
- * **Subsidize**, when the system creates new points to increase a market’s
-   capitalization, without creating additional outcome shares. This affects the
-   exchange rate for that market by making the outcome shares more valuable.
+   shares. The system automatically exchanges those back to points. Exchange is
+   only possible for markets that are not yet resolved.
  * **Resolve**, when a market resolves, and the value of the outcome shares
    becomes known. In this transaction, the points that were allocated to the
    market’s capitalization are distributed over the users who hold outcome

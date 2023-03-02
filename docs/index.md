@@ -6,6 +6,8 @@ Hanson is a [prediction market][prediction-market] app.
  * No real money, users trade virtual internet points.
  * Designed for running internal prediction markets in organizations.
 
+*Vaporware warning: Not everything on this site is implemented.*
+
 [prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
 
 ## Getting started

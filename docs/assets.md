@@ -2,7 +2,7 @@
 
 There are two kinds of asset in Hanson:
 
- * **Points**, the native currency, denoted with symbol “pt”. Points have no
+ * **Points**, the native currency, denoted with symbol ℙ. Points have no
    (intrinsic) value in the real world, they are virtual internet points. If
    Hanson were a real-money prediction market, the currency might have been
    Euros or Bitcoin.
@@ -11,14 +11,12 @@ There are two kinds of asset in Hanson:
    converted into points, while the shares for the other outcomes become
    worthless.
 
-For every market, there is an exchange rate between outcome shares and points.
-It starts out at 1:1, but outcome shares can become more valuable due to
-subsidies. Outcome shares can be created from and destroyed for points, but only
-in equal quantities. For example, in a binary market with Y and N outcomes and
-1:1 exchange rate, we can convert 1&nbsp;pt into 1&nbsp;Y + 1&nbsp;N, and vice
-versa. This is because when the market resolves, either Y will become worth
-1&nbsp;pt and N worthless, or N will become worth 1&nbsp;pt and Y worthless, so
-if you have 1&nbsp;Y and 1&nbsp;N, you effectively have 1&nbsp;pt.
+Outcome shares can be created from and destroyed for points, but only
+in equal quantities. For example, in a binary market with Y and N outcomes, we
+can convert 1&nbsp;point into 1&nbsp;Y + 1&nbsp;N, and vice versa. This is
+because when the market resolves, either Y will become worth 1&nbsp;point and N
+worthless, or N will become worth 1&nbsp;point and Y worthless, so if you have
+1&nbsp;Y and 1&nbsp;N, you effectively have 1&nbsp;point.
 
 Points can only be created by the system. The system creates points for two
 reasons:

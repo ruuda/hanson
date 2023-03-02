@@ -2,7 +2,7 @@
   description = "Hanson";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/fcd48a5a0693f016a5c370460d0c2a8243b882dc";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
     utils.url = "github:numtide/flake-utils";
   };
 
@@ -24,9 +24,15 @@
         # we include it like this, then Mypy *can* typecheck Flask functions.
         ps.mypy
         ps.pytest
+
+        # These do not strictly need to be here, but if we import them into our
+        # development shell from the top level, we get multiple Python
+        # interpreters in there, it's nicer to only have a single one.
+        ps.black
+        ps.mkdocs
       ];
 
-      python = pkgs.python3.override {
+      python = pkgs.python311.override {
         packageOverrides = self: super: {
           hanson = self.buildPythonPackage rec {
             pname = "hanson";
@@ -39,12 +45,11 @@
 
       # For development, we want a Python that has all our dependent packages,
       # but not Hanson itself as a package.
-      pythonDev = pkgs.python3.withPackages (ps:
+      pythonDev = python.withPackages (ps:
         (runtimeDependencies ps) ++ (developmentDependencies ps)
       );
 
       hanson = python.pkgs.toPythonApplication python.pkgs.hanson;
-
     in
       {
         devShells = {
@@ -52,10 +57,8 @@
             name = "hanson";
 
             nativeBuildInputs = [
-              pkgs.black
               pkgs.overmind
               pkgs.postgresql_14
-              pkgs.mkdocs
               pythonDev
             ];
 

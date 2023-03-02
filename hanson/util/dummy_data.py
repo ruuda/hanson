@@ -12,11 +12,12 @@ from decimal import Decimal
 from textwrap import dedent
 from typing import List
 
-from hanson.database import Transaction, connect_default
+from hanson.database import Transaction, connect_config
+from hanson.models.color import Color
+from hanson.models.config import Config
 from hanson.models.currency import Points
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
-from hanson.models.color import Color
 from hanson.models.session import Session
 from hanson.models.transaction import (
     create_transaction_income,
@@ -145,7 +146,8 @@ def add_markets(tx: Transaction, users: List[User]) -> List[Market]:
 
 
 def main() -> None:
-    conn = connect_default()
+    config = Config.load_from_toml_file("config.toml")
+    conn = connect_config(config)
     with conn.begin() as tx:
         users = add_users(tx)
 

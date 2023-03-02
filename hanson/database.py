@@ -171,15 +171,6 @@ def connect_config(config: Config) -> ConnectionPool:
     )
 
 
-def connect_default() -> ConnectionPool:
-    return ConnectionPool.new(
-        database="hanson",
-        user="hanson_app",
-        password="hanson_app",
-        host=f"{os.getcwd()}/run/db_dev",
-    )
-
-
 def get_context_connection() -> ConnectionPool:
     """
     Return the global database connection associated with the Flask app.

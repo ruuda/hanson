@@ -14,27 +14,43 @@ Management CLI for a Hanson instance.
 import click
 
 from decimal import Decimal
+from typing import ContextManager
 
-from hanson.database import connect_default
+from hanson.database import Transaction, connect_config
+from hanson.models.config import Config
+
+
+def begin_transaction(ctx: click.Context) -> ContextManager[Transaction]:
+    config: Config = ctx.obj
+    conn = connect_config(config)
+    return conn.begin()
 
 
 @click.group()
-def main() -> None:
-    pass
+@click.option(
+    "--config",
+    type=str,
+    default="config.toml",
+    help="Path to the config toml file.",
+    show_default=True,
+)
+@click.pass_context
+def main(ctx: click.Context, config: str) -> None:
+    ctx.obj = Config.load_from_toml_file(config)
 
 
 @main.command()
 @click.argument("username", required=True, type=str)
 @click.argument("full_name", required=True, type=str)
-def add_user(username: str, full_name: str) -> None:
+@click.pass_context
+def add_user(ctx: click.Context, username: str, full_name: str) -> None:
     """
     Create a new user. Mostly useful for testing purposes.
     """
     from hanson.models.user import User
     from hanson.models.account import UserAccount
 
-    conn = connect_default()
-    with conn.begin() as tx:
+    with begin_transaction(ctx) as tx:
         user = User.create(tx, username, full_name)
         UserAccount.ensure_points_account(tx, user.id)
         tx.commit()
@@ -43,7 +59,8 @@ def add_user(username: str, full_name: str) -> None:
 
 @main.command()
 @click.argument("points_per_user", required=True, type=Decimal)
-def airdrop(points_per_user: Decimal) -> None:
+@click.pass_context
+def airdrop(ctx: click.Context, points_per_user: Decimal) -> None:
     """
     Create points out of thin air for every user.
     """
@@ -53,8 +70,7 @@ def airdrop(points_per_user: Decimal) -> None:
 
     amount = Points(points_per_user)
 
-    conn = connect_default()
-    with conn.begin() as tx:
+    with begin_transaction(ctx) as tx:
         for user in User.list_all(tx):
             _transaction_id = create_transaction_income(
                 tx,
@@ -67,7 +83,8 @@ def airdrop(points_per_user: Decimal) -> None:
 
 
 @main.command()
-def annihilate() -> None:
+@click.pass_context
+def annihilate(ctx: click.Context) -> None:
     """
     Ensure no users own shares in all outcomes of a market.
 
@@ -84,8 +101,7 @@ def annihilate() -> None:
     from hanson.models.user import User
     from hanson.models.outcome import Outcome
 
-    conn = connect_default()
-    with conn.begin() as tx:
+    with begin_transaction(ctx) as tx:
         for user in User.list_all(tx):
             print(f"{user.username}:")
             accounts = list(UserAccount.list_all_for_user(tx, user.id))

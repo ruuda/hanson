@@ -9,7 +9,10 @@ Hanson is a [prediction market][prediction-market] app.
 **Vaporware warning**: Hanson is under development and not yet in a state where
 it is useful. I will likely lose interest in it before it reaches that stage.
 
-## Development
+## Getting started
+
+See [the development guide][docs-dev] for a detailed guide for how to run and
+develop Hanson locally. The gist of it is:
 
 Enter a development environment with [Nix][nix] [≥2.11][nix-2.11]:
 
@@ -30,19 +33,23 @@ Run the app in development mode:
 
     overmind start
 
-By default Flask will listen on `localhost:5000`.
+By default, Flask will listen on `http://localhost:5000`. Then create yourself
+a few users, and give them some points to spend:
 
-Run the tests:
+    ./cli.py add-user etyrell   "Eldon Tyrell"
+    ./cli.py add-user lkowalski "Leon Kowalski"
+    ./cli.py add-user rbatty    "Roy Batty"
+    ./cli.py add-user rdeckard  "Rick Deckard"
+    ./cli.py airdrop 25.0
 
-    python -m pytest tests
+Hanson intends to outsource authentication to a third-party identity provider,
+so there is no authentication step for development, you can sign in with only
+the username.
 
-The tests will use an independent database at `run/db_test`, so the tests do not
-interfere with the development database. The tests start this Postgres instance
-in the test fixture, so this does not depend on any daemon to be running.
-
-[prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
-[nix]:               https://nixos.org/
+[docs-dev]:          https://docs.ruuda.nl/hanson/development/
 [nix-2.11]:          https://releases.nixos.org/?prefix=nix/nix-2.11.0/
+[nix]:               https://nixos.org/
+[prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
 
 ## To do
 

@@ -28,7 +28,7 @@ listens on a domain socket. Start one that puts its data in `run/db_dev`:
     tools/run_postgres.py --force-init run/db_dev
 
 Then in a different shell, perform the initial setup that creates the database
-and users, and then run all migrations to populate the schema:
+and database users, and then run all migrations to populate the schema:
 
     export PGHOST="$PWD/run/db_dev"
     tools/migrate.py setup
@@ -71,13 +71,19 @@ interleaves their output on stdout. To bring everything up:
 
     overmind start
 
-By default Flask listens on `localhost:5000`. However, the database does not
-contain any users or interesting data. To fill it with two dummy users and a few
-demo markets, use the dummy data script:
+By default Flask listens on <http://localhost:5000>. However, the database does
+not contain any users or interesting data. To add a few users and give them some
+points to spend, use the admin <abbr>CLI</abbr> tool:
 
-    hanson/util/dummy_data.py
+    ./cli.py add-user etyrell   "Eldon Tyrell"
+    ./cli.py add-user lkowalski "Leon Kowalski"
+    ./cli.py add-user rbatty    "Roy Batty"
+    ./cli.py add-user rdeckard  "Rick Deckard"
+    ./cli.py airdrop 25.0
 
-After this you can log in as `henk` or `piet`.
+After this you can log in by username. In development mode Hanson does not
+authenticate users, the plan is to outsource this to a third-party identity
+provider.
 
 [procfile]: https://ddollar.github.io/foreman/#PROCFILE
 [overmind]: https://github.com/DarthSim/overmind
@@ -99,3 +105,11 @@ Typecheck with [Mypy][mypy]:
     mypy --strict hanson tools tests
 
 [mypy]: https://mypy-lang.org/
+
+## Formatting
+
+All code is formatted with [Black][black]:
+
+    black hanson tests tools
+
+[black]: https://github.com/psf/black

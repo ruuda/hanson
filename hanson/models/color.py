@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import NamedTuple, Tuple
 
-import colorsys
 import math
 
 Vec3 = Tuple[float, float, float]
@@ -23,7 +22,7 @@ def srgb_to_linear(v: float) -> float:
     if v < 0.04045:
         return v / 12.92
     else:
-        return ((v + 0.055) / 1.055) ** 2.4
+        return math.pow((v + 0.055) / 1.055, 2.4)
 
 
 def linear_to_srgb(v: float) -> float:
@@ -33,7 +32,7 @@ def linear_to_srgb(v: float) -> float:
     if v < 0.0031308:
         return v * 12.92
     else:
-        return (v ** (1 / 2.4)) * 1.055 - 0.055
+        return math.pow(v, 1 / 2.4) * 1.055 - 0.055
 
 
 def linear_rgb_to_xyz(r: float, g: float, b: float) -> Vec3:

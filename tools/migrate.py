@@ -220,6 +220,7 @@ def setup() -> None:
     """
     import os
     import subprocess
+
     os.putenv("PGUSER", "postgres")
     os.putenv("PGPASSWORD", "postgres")
     os.putenv("PGDATABASE", "postgres")

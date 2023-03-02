@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from hanson.database import Transaction
 from hanson.models.account import MarketAccount, UserAccount
+from hanson.models.color import Color
 from hanson.models.currency import Points
 from hanson.models.market import Market
 from hanson.models.outcome import Outcome
@@ -30,7 +31,9 @@ def test_market_account_ensure_pool_account_is_idempotent(
     tx: Transaction,
     market: Market,
 ) -> None:
-    outcome_1 = Outcome.create_discrete(tx, market.id, "All", "#000000")
+    outcome_1 = Outcome.create_discrete(
+        tx, market.id, "All", Color.from_html_hex("#000000")
+    )
     account_1 = MarketAccount.ensure_pool_account(tx, market.id, outcome_1.id)
     account_2 = MarketAccount.ensure_pool_account(tx, market.id, outcome_1.id)
     assert account_1 == account_2
@@ -46,8 +49,8 @@ def test_mutation_mint_shares_handles_negative_numbers(
     )
     from hanson.models.transaction import create_transaction_income
 
-    o1 = Outcome.create_discrete(tx, market.id, "Black", "#000000")
-    o2 = Outcome.create_discrete(tx, market.id, "White", "#ffffff")
+    o1 = Outcome.create_discrete(tx, market.id, "Black", Color.from_html_hex("#000000"))
+    o2 = Outcome.create_discrete(tx, market.id, "White", Color.from_html_hex("#ffffff"))
 
     transaction_id: int = tx.execute_fetch_scalar(
         """

@@ -142,7 +142,6 @@ def render_graph(
             polyline = polylines.setdefault(outcome.id, [])
             polyline.append(f"{x:.2f},{start_y - height:.3f}")
 
-
         t = datetime.fromtimestamp(current_tick * bin_size_secs, tz=timezone.utc)
         if (current_tick - origin_tick) % 4 == 0:
             tick_label = tick_format.get_label(t)
@@ -165,7 +164,7 @@ def render_graph(
             f'fill="none" stroke="{color}" '
             'stroke-width="0.15" '
             'stroke-linejoin="round" '
-            '/>'
+            "/>"
         )
 
     result.append("</svg>")

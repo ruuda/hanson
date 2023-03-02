@@ -102,7 +102,7 @@ in the test fixture, so this does not depend on any daemon to be running.
 
 Typecheck with [Mypy][mypy]:
 
-    mypy --strict hanson tools tests
+    mypy --strict .
 
 [mypy]: https://mypy-lang.org/
 
@@ -110,6 +110,6 @@ Typecheck with [Mypy][mypy]:
 
 All code is formatted with [Black][black]:
 
-    black hanson tests tools
+    black .
 
 [black]: https://github.com/psf/black

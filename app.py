@@ -28,7 +28,7 @@ app.register_blueprint(route_user.app)
 # Not sure why Mypy does not like this, maybe because I am mixing named
 # tuples with Flask's tuple, and usually that works, but maybe deep inside
 # Callable it creates problems?
-@app.errorhandler(NotLoggedInError)  # type: ignore
+@app.errorhandler(NotLoggedInError)
 def handle_not_logged_in(_: NotLoggedInError) -> Response:
     return Response.redirect_see_other("/login")
 
@@ -42,7 +42,7 @@ def main() -> None:
     start from app.py as the entry point.
     """
     import os
-    import waitress
+    import waitress  # type: ignore
 
     # TODO: Maybe put this in a config file after all?
     # The current values are misleading because we don't use those!

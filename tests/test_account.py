@@ -54,7 +54,7 @@ def test_mutation_mint_shares_handles_negative_numbers(
 
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO "transaction" (type) VALUES ('annihilate') RETURNING id;
+        INSERT INTO transactions (type) VALUES ('annihilate') RETURNING id;
         """
     )
 

@@ -7,3 +7,9 @@ Hanson is a [prediction market][prediction-market] app.
  * Designed for running internal prediction markets in organizations.
 
 [prediction-market]: https://en.wikipedia.org/wiki/Prediction_market
+
+## Getting started
+
+For now, you can only run Hanson locally, there is no official way to do a
+production deployment. Follow the steps in [the development guide](development.md)
+to start a local instance.

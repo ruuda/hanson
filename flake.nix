@@ -16,6 +16,7 @@
         ps.flask
         ps.jinja2
         ps.psycopg2
+        ps.waitress
       ];
       developmentDependencies = ps: [
         # Mypy goes with the pythonPackages, we don't use the top-level pkgs.mypy,
@@ -24,9 +25,26 @@
         ps.mypy
         ps.pytest
       ];
-      python = pkgs.python3.withPackages (ps:
+
+      python = pkgs.python3.override {
+        packageOverrides = self: super: {
+          hanson = self.buildPythonPackage rec {
+            pname = "hanson";
+            version = "0.0.0";
+            src = ./.;
+            propagatedBuildInputs = runtimeDependencies self;
+          };
+        };
+      };
+
+      # For development, we want a Python that has all our dependent packages,
+      # but not Hanson itself as a package.
+      pythonDev = pkgs.python3.withPackages (ps:
         (runtimeDependencies ps) ++ (developmentDependencies ps)
       );
+
+      hanson = python.pkgs.toPythonApplication python.pkgs.hanson;
+
     in
       {
         devShells = {
@@ -38,7 +56,7 @@
               pkgs.overmind
               pkgs.postgresql_14
               pkgs.mkdocs
-              python
+              pythonDev
             ];
 
             LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
@@ -50,7 +68,9 @@
           };
         };
 
-        packages = {};
+        packages = {
+          default = hanson;
+        };
       }
   );
 }

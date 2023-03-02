@@ -1,0 +1,9 @@
+[postgres]
+database = "hanson"
+user = "hanson_app"
+password = "hanson_app"
+host = "./run/db_dev"
+
+[server]
+host = "127.0.0.1"
+port = 5471

@@ -8,6 +8,7 @@ theme:
   custom_dir: docs/theme
 
 markdown_extensions:
+  - codehilite
   - toc:
       permalink: true
       permalink_title: null
@@ -19,5 +20,8 @@ nav:
     - Assets: assets.md
     - Accounts: accounts.md
     - Transactions: transactions.md
+  - Operator guide:
+      - Deploying: deploying.md
+      - Configuration: configuration.md
   - Development:
     - Development guide: development.md

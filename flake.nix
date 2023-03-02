@@ -30,6 +30,7 @@
         # interpreters in there, it's nicer to only have a single one.
         ps.black
         ps.mkdocs
+        ps.pygments
       ];
 
       python = pkgs.python311.override {

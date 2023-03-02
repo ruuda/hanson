@@ -167,7 +167,7 @@ def connect_config(config: Config) -> ConnectionPool:
         password=pg.password,
         # Convert to an absolute path, because Postgres can only connect to a
         # Unix socket if it's an absolute path.
-        host=os.path.abspath(pg.host),
+        host=os.path.abspath(pg.host) if pg.host.startswith(".") else pg.host,
     )
 
 

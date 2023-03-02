@@ -24,6 +24,24 @@ def main() -> None:
 
 
 @main.command()
+@click.argument("username", required=True, type=str)
+@click.argument("full_name", required=True, type=str)
+def add_user(username: str, full_name: str) -> None:
+    """
+    Create a new user. Mostly useful for testing purposes.
+    """
+    from hanson.models.user import User
+    from hanson.models.account import UserAccount
+
+    conn = connect_default()
+    with conn.begin() as tx:
+        user = User.create(tx, username, full_name)
+        UserAccount.ensure_points_account(tx, user.id)
+        tx.commit()
+        print(f"Created user with id {user.id} with username {user.username}.")
+
+
+@main.command()
 @click.argument("points_per_user", required=True, type=Decimal)
 def airdrop(points_per_user: Decimal) -> None:
     """

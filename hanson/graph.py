@@ -97,13 +97,13 @@ def render_graph(
     end_tick = (end_time + ps_history.bin_size).timestamp() // bin_size_secs
     num_ticks = end_tick - start_tick
 
-    aspect_ratio = 21 / 9
-    axis_height = num_ticks / aspect_ratio
+    x_scale = 21 / num_ticks
+    axis_height = 9.0
     graph_height = axis_height + 2.0
 
     result = []
     result.append(
-        f"""<svg version="1.1" xmlns="xmlns="http://www.w3.org/2000/svg" width="100%" height="18em" viewbox="0 0 {num_ticks} {graph_height:.3f}">"""
+        f"""<svg version="1.1" xmlns="xmlns="http://www.w3.org/2000/svg" width="100%" height="21em" viewbox="0 0 21 {graph_height}">"""
     )
 
     current_tick = end_tick
@@ -133,23 +133,23 @@ def render_graph(
         for outcome, p in zip(outcomes, current_ps.ps()):
             height = p * axis_height
             result.append(
-                f'<rect x="{x - 0.5 - bar_width / 2:.2f}" y="{start_y:.3f}" '
-                f'width="{bar_width:.2f}" height="{height:.3f}" '
+                f'<rect x="{(x - 0.5 - bar_width / 2) * x_scale:.2f}" y="{start_y:.3f}" '
+                f'width="{bar_width * x_scale:.2f}" height="{height:.3f}" '
                 f'fill="{outcome.get_sanitized_color()}" opacity="0.3"></rect>'
             )
             start_y += p * axis_height
 
             polyline = polylines.setdefault(outcome.id, [])
-            polyline.append(f"{x:.2f},{start_y - height:.3f}")
+            polyline.append(f"{x * x_scale:.2f},{start_y - height:.3f}")
 
         t = datetime.fromtimestamp(current_tick * bin_size_secs, tz=timezone.utc)
-        if (current_tick - origin_tick) % 4 == 0:
+        if (current_tick - origin_tick) % 25 == 0:
             tick_label = tick_format.get_label(t)
             result.append(
-                f'<circle cx="{x - 0.5:.2f}" '
+                f'<circle cx="{(x - 0.5) * x_scale:.2f}" '
                 f'cy="{axis_height + 0.4:.2f}" '
                 f'r="0.1"></circle>'
-                f'<text x="{x - 0.5:.2f}" '
+                f'<text x="{(x - 0.5) * x_scale:.2f}" '
                 f'y="{axis_height + 1.2:.2f}" '
                 f'text-anchor="middle">{tick_label}</text>'
             )
@@ -162,7 +162,7 @@ def render_graph(
         result.append(
             f'<polyline points="{points}" '
             f'fill="none" stroke="{color}" '
-            'stroke-width="0.15" '
+            'stroke-width="0.08" '
             'stroke-linejoin="round" '
             "/>"
         )

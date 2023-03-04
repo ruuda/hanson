@@ -77,14 +77,13 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
         ),
     )
     n = 10
-    c0 = Color.from_html_hex("#006cff").to_cieluv()
-    c1 = Color.from_html_hex("#ff8100").to_cieluv()
+    c0 = Color.from_html_hex("#006cff")
+    c1 = Color.from_html_hex("#ff8100")
     for i in range(n):
         month = ((9 + i) % 12) + 1
         year = 2019 + (9 + i) // 12
         # The colors are interpolated between the endpoints, in CIELUV space.
-        t: float = i / (n - 1)
-        c = Color.from_cieluv(*(c0x * (1.0 - t) + c1x * t for c0x, c1x in zip(c0, c1)))
+        c = Color.interpolate_cieluv(c0, c1, i / (n - 1))
         tt = datetime(year, month, 1, 0, 0, 0, tzinfo=timezone.utc)
         Outcome.create_datetime(tx, market.id, f"{year}-{month:02}", c, tt)
     markets.append(market)
@@ -106,10 +105,8 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
     for i in range(n):
         # Values are exponentially increasing.
         v: int = 10 * (2**i)
-        # The colors are interpolated between the endpoints, in CIELUV space,
-        # same as before.
-        t = i / (n - 1)
-        c = Color.from_cieluv(*(c0x * (1.0 - t) + c1x * t for c0x, c1x in zip(c0, c1)))
+        # The colors are interpolated between the endpoints, in CIELUV space.
+        c = Color.interpolate_cieluv(c0, c1, i / (n - 1))
         Outcome.create_float(tx, market.id, str(v), c, float(v))
     markets.append(market)
 

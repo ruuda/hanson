@@ -204,6 +204,18 @@ class Color(NamedTuple):
             linear_to_srgb(b),
         )
 
+    @staticmethod
+    def interpolate_cieluv(c0: Color, c1: Color, t: float) -> Color:
+        """
+        Return the interpolated color. t should be in the range [0, 1].
+        """
+        return Color.from_cieluv(
+            *(
+                c0x * (1.0 - t) + c1x * t
+                for c0x, c1x in zip(c0.to_cieluv(), c1.to_cieluv())
+            )
+        )
+
     def clamp_for_ui(self) -> Color:
         """
         Limit saturation and lightness to make the color suitable for usage in the UI.

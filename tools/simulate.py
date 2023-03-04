@@ -13,9 +13,9 @@ The simulator simulates users trading, filling the database with dummy data.
 
 from typing import List
 from datetime import datetime, timezone
+from decimal import Decimal
 
-
-from hanson.database import Transaction
+from hanson.database import Transaction, connect_config
 from hanson.models.color import Color
 from hanson.models.config import Config
 from hanson.models.currency import Points
@@ -23,6 +23,10 @@ from hanson.models.outcome import Outcome
 from hanson.models.market import Market
 from hanson.models.probability import ProbabilityDistribution
 from hanson.models.user import User
+from hanson.models.transaction import (
+    create_transaction_income,
+    create_transaction_fund_market,
+)
 
 
 def add_users(tx: Transaction) -> List[User]:
@@ -34,7 +38,7 @@ def add_users(tx: Transaction) -> List[User]:
     ]
 
 
-def add_markets(tx, author: User) -> List[Market]:
+def add_markets(tx: Transaction, author: User) -> List[Market]:
     markets = []
 
     market = Market.create(
@@ -72,13 +76,17 @@ def add_markets(tx, author: User) -> List[Market]:
             "burns half as long — and Roy has burned so very, very brightly."
         ),
     )
-    for i in range(10):
-        month = 10 + i
-        year = 2019 + (month - 1) // 12
+    n = 10
+    c0 = Color.from_html_hex("#006cff").to_cieluv()
+    c1 = Color.from_html_hex("#ff8100").to_cieluv()
+    for i in range(n):
+        month = ((9 + i) % 12) + 1
+        year = 2019 + (9 + i) // 12
+        # The colors are interpolated between the endpoints, in CIELUV space.
+        t: float = i / (n - 1)
+        c = Color.from_cieluv(*(c0x * (1.0 - t) + c1x * t for c0x, c1x in zip(c0, c1)))
         tt = datetime(year, month, 1, 0, 0, 0, tzinfo=timezone.utc)
-        Outcome.create_datetime(
-            tx, market.id, f"{year}-{month:02}", Color.from_html_hex("#ff0000"), tt
-        )
+        Outcome.create_datetime(tx, market.id, f"{year}-{month:02}", c, tt)
     markets.append(market)
 
     market = Market.create(
@@ -95,15 +103,45 @@ def add_markets(tx, author: User) -> List[Market]:
         ),
     )
     n = 5
-    c0 = Color.from_html_hex("#006cff").to_cieluv()
-    c1 = Color.from_html_hex("#ff8100").to_cieluv()
     for i in range(n):
         # Values are exponentially increasing.
-        v: int = 10 * (2 ** i)
-        # The colors are interpolated between the endpoints, in CIELUV space.
-        t: float = i / (n - 1)
+        v: int = 10 * (2**i)
+        # The colors are interpolated between the endpoints, in CIELUV space,
+        # same as before.
+        t = i / (n - 1)
         c = Color.from_cieluv(*(c0x * (1.0 - t) + c1x * t for c0x, c1x in zip(c0, c1)))
         Outcome.create_float(tx, market.id, str(v), c, float(v))
     markets.append(market)
 
     return markets
+
+
+def add_income(tx: Transaction, users: List[User], amount: Points) -> None:
+    for user in users:
+        create_transaction_income(tx, user.id, amount)
+
+
+def main() -> None:
+    config = Config.load_from_toml_file("config.toml")
+    conn = connect_config(config)
+    with conn.begin() as tx:
+        users = add_users(tx)
+
+        add_income(tx, users, Points(Decimal("10.00")))
+
+        # For simplicity, the first user is going to be the author of all markets.
+        etyrell = users[0]
+        markets = add_markets(tx, etyrell)
+
+        # We give this user some additional income to pay for funding the markets.
+        create_transaction_income(tx, etyrell.id, Points(Decimal("5.0") * len(markets)))
+        for market in markets:
+            create_transaction_fund_market(
+                tx, etyrell.id, market.id, Points(Decimal("5.00"))
+            )
+
+        tx.commit()
+
+
+if __name__ == "__main__":
+    main()

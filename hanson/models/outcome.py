@@ -68,7 +68,7 @@ class Outcome:
         assert value.tzinfo is not None
         outcome_id: int = tx.execute_fetch_scalar(
             """
-            INSERT INTO soutcomes (market_id, name, color, value_datetime)
+            INSERT INTO outcomes (market_id, name, color, value_datetime)
             VALUES (%s, %s, %s, %s)
             RETURNING id;
             """,

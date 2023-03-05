@@ -163,10 +163,23 @@ class Sim:
     beliefs: Dict[int, ProbabilityDistribution]
 
 
+@dataclass(frozen=False)
+class Clock:
+    current_time: datetime
+
+    def advance_to(self, t: datetime) -> None:
+        assert t.tzinfo is not None
+        assert t >= self.current_time
+        self.current_time = t
+
+    def tick(self, dt: timedelta) -> None:
+        self.current_time = self.current_time + dt
+
+
 class Simulator(NamedTuple):
     rng: Random
     conn: ConnectionPool
-    t0: datetime
+    clock: Clock
     users: List[User]
     markets: List[Market]
     sims: List[Sim]
@@ -210,69 +223,90 @@ class Simulator(NamedTuple):
             for user in users
         ]
 
-        return Simulator(rng, conn, t0, users, markets, sims)
+        clock = Clock(t0)
+        return Simulator(rng, conn, clock, users, markets, sims)
 
-    def update_sim(self, sim: Sim, now: datetime) -> None:
+    def sim_trade_once(self, tx: Transaction, sim: Sim, budget: Points) -> Points:
+        """
+        Look at all markets, then given the budget, decide which market we could
+        get the most ROI in, and trade in that market. Returns the number of
+        points spent.
+        """
+        assert budget > Points.zero()
+
+        best_roi = 0.0
+        order: Optional[OrderDetails] = None
+
+        for market in self.markets:
+            outcomes = Outcome.get_all_by_market(tx, market.id)
+            pool_accounts = [
+                MarketAccount.expect_pool_account(tx, market.id, outcome.id)
+                for outcome in outcomes.outcomes
+            ]
+            pool_pd = ProbabilityDistribution.from_pool_balances(
+                [pool_account.balance for pool_account in pool_accounts]
+            )
+            self_pd = sim.beliefs[market.id]
+            expected_roi = 1.0
+            for p_pool, p_self in zip(pool_pd.ps(), self_pd.ps()):
+                outcome_roi = p_self / p_pool
+                expected_roi += outcome_roi * p_self
+
+            print(f"Market {market.id}:")
+            print(f"  expected roi: {expected_roi:.2f}")
+            print(f"  pool pd: {pool_pd}")
+            print(f"  self pd: {self_pd}")
+
+            if expected_roi > best_roi:
+                best_roi = expected_roi
+                order = OrderDetails.for_target_distribution(
+                    tx,
+                    user_id=sim.user.id,
+                    market=market,
+                    outcomes=outcomes,
+                    pd_target=self_pd,
+                    max_spend=budget,
+                )
+
+        if order is not None:
+            print(f"Will trade in market {order.market.id}:")
+            print(f"  pd_after:     {order.pd_after}")
+            print(f"  costs_shares: {order.costs_shares}")
+            print(f"  cost_points:  {order.cost_points}")
+
+            tx_id = create_transaction_execute_order(
+                tx,
+                debit_user_id=sim.user.id,
+                credit_market_id=order.market.id,
+                cost=order.cost_points,
+                amounts=[
+                    Shares(cost, outcome_id=outcome.id)
+                    for outcome, cost in zip(
+                        order.outcomes.outcomes, order.costs_shares
+                    )
+                ],
+                now=self.clock.current_time,
+            )
+            print(f"  order tx_id:  {tx_id}")
+            return order.cost_points
+
+        return Points.zero()
+
+    def sim_update(self, sim: Sim) -> None:
         with self.conn.begin() as tx:
             user_points_account = UserAccount.expect_points_account(tx, sim.user.id)
             # Per step, we aim to spend about 1/10 of our balance.
             budget = user_points_account.balance // 10
             print(f"\nBudget for user {sim.user.id}: {budget}")
 
-            best_roi = 0.0
-            order: Optional[OrderDetails] = None
+            while budget > Points.zero():
+                points_spent = self.sim_trade_once(tx, sim, budget)
+                budget = budget - points_spent
+                if points_spent.is_zero():
+                    break
 
-            for market in self.markets:
-                outcomes = Outcome.get_all_by_market(tx, market.id)
-                pool_accounts = [
-                    MarketAccount.expect_pool_account(tx, market.id, outcome.id)
-                    for outcome in outcomes.outcomes
-                ]
-                pool_pd = ProbabilityDistribution.from_pool_balances(
-                    [pool_account.balance for pool_account in pool_accounts]
-                )
-                self_pd = sim.beliefs[market.id]
-                expected_roi = 1.0
-                for p_pool, p_self in zip(pool_pd.ps(), self_pd.ps()):
-                    outcome_roi = p_self / p_pool
-                    expected_roi += outcome_roi * p_self
-
-                print(f"Market {market.id}:")
-                print(f"  expected roi: {expected_roi:.2f}")
-                print(f"  pool pd: {pool_pd}")
-                print(f"  self pd: {self_pd}")
-
-                if expected_roi > best_roi:
-                    best_roi = expected_roi
-                    order = OrderDetails.for_target_distribution(
-                        tx,
-                        user_id=sim.user.id,
-                        market=market,
-                        outcomes=outcomes,
-                        pd_target=self_pd,
-                        max_spend=budget,
-                    )
-
-            if order is not None:
-                print(f"Will trade in market {order.market.id}:")
-                print(f"  pd_after:     {order.pd_after}")
-                print(f"  costs_shares: {order.costs_shares}")
-                print(f"  cost_points:  {order.cost_points}")
-
-                tx_id = create_transaction_execute_order(
-                    tx,
-                    debit_user_id=sim.user.id,
-                    credit_market_id=order.market.id,
-                    cost=order.cost_points,
-                    amounts=[
-                        Shares(cost, outcome_id=outcome.id)
-                        for outcome, cost in zip(
-                            order.outcomes.outcomes, order.costs_shares
-                        )
-                    ],
-                    now=now,
-                )
-                print(f"  order tx_id:  {tx_id}")
+                # Pretend we spent five minutes pondering the trade.
+                self.clock.tick(timedelta(minutes=5))
 
             tx.commit()
 
@@ -281,6 +315,7 @@ def main() -> None:
     # Backdate market creation to a fixed time in the past, so we can run
     # the simulation for a ~year and also see the graphs in the webinterface.
     t0 = datetime(2022, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
+    t1 = datetime(2023, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
 
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)
@@ -290,12 +325,19 @@ def main() -> None:
         for market_id, pd in sim.beliefs.items():
             print(f"user={sim.user.id} market={market_id} => {pd}")
 
-    t = t0
-
-    for _ in range(10):
+    while simulator.clock.current_time < t1:
         for sim in simulator.sims:
-            t = t + timedelta(hours=1)
-            simulator.update_sim(sim, now=t)
+            simulator.sim_update(sim)
+
+        simulator.clock.tick(timedelta(days=1))
+        with simulator.conn.begin() as tx:
+            add_income(
+                tx,
+                simulator.users,
+                Points(Decimal("2.00")),
+                simulator.clock.current_time,
+            )
+            tx.commit()
 
 
 if __name__ == "__main__":

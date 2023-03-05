@@ -344,15 +344,16 @@ class Simulator(NamedTuple):
 
     def sim_update(self, sim: Sim) -> None:
         with self.conn.begin() as tx:
-            user_points_account = UserAccount.expect_points_account(tx, sim.user.id)
-            # Per step, we aim to spend about 1/10 of our balance.
-            budget = user_points_account.balance // 10
-            print(f"\nBudget for user {sim.user.id}: {budget}")
-
             self.sim_update_beliefs(tx, sim)
 
+            user_points_account = UserAccount.expect_points_account(tx, sim.user.id)
+            # Per step, we aim to spend at most 1/3 of our balance. Per trade,
+            # we aim to spend at most half of the remaining budget.
+            budget = user_points_account.balance // 3
+            print(f"\nBudget for user {sim.user.id}: {budget}")
+
             while budget > Points.zero():
-                points_spent = self.sim_trade_once(tx, sim, budget)
+                points_spent = self.sim_trade_once(tx, sim, budget // 2)
                 budget = budget - points_spent
                 if points_spent < Points(Decimal("0.50")):
                     break

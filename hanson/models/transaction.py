@@ -7,8 +7,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from hanson.models.account import Balance
 from hanson.database import Transaction
@@ -21,18 +22,27 @@ def create_transaction_income(
     tx: Transaction,
     user_id: int,
     amount: Points,
+    now: Optional[datetime] = None,
 ) -> int:
     """
     Create a new transaction that brings `amount` new points into existence and
     puts them in the user's account. If the user has no account yet, one will be
     created.
+
+    The transaction timestamp defaults to the database's current time, but can
+    optionally be specified using the `now` argument.
     """
+    if now is not None:
+        assert now.tzinfo is not None
+
     account = UserAccount.ensure_points_account(tx, user_id)
 
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO transactions (type) VALUES ('income') RETURNING id;
-        """
+        INSERT INTO transactions (type, created_at)
+        VALUES ('income', COALESCE(%s, now())) RETURNING id;
+        """,
+        (now,),
     )
 
     subtransaction_id: int = tx.execute_fetch_scalar(
@@ -222,12 +232,19 @@ def create_transaction_fund_market(
     user_id: int,
     market_id: int,
     amount: Points,
+    now: Optional[datetime] = None,
 ) -> int:
     """
     Create a transaction that first converts `amount` of the user's points into
     outcome shares, and then puts all of the outcome shares into the market's
     AMM pool.
+
+    The transaction timestamp defaults to the database's current time, but can
+    optionally be specified using the `now` argument.
     """
+    if now is not None:
+        assert now.tzinfo is not None
+
     user_points_account = UserAccount.ensure_points_account(tx, user_id)
     assert (
         user_points_account.balance >= amount
@@ -242,8 +259,10 @@ def create_transaction_fund_market(
 
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO transactions (type) VALUES ('fund_market') RETURNING id;
-        """
+        INSERT INTO transactions (type, created_at)
+        VALUES ('fund_market', COALESCE(%s, now())) RETURNING id;
+        """,
+        (now,),
     )
 
     subtransaction_id: int = tx.execute_fetch_scalar(
@@ -410,14 +429,23 @@ def create_transaction_execute_order(
     credit_market_id: int,
     cost: Points,
     amounts: List[Shares],
+    now: Optional[datetime] = None,
 ) -> int:
     """
     Create a transaction that exchanges the given amount of shares.
+
+    The transaction timestamp defaults to the database's current time, but can
+    optionally be specified using the `now` argument.
     """
+    if now is not None:
+        assert now.tzinfo is not None
+
     transaction_id: int = tx.execute_fetch_scalar(
         """
-        INSERT INTO transactions (type) VALUES ('trade') RETURNING id;
-        """
+        INSERT INTO transactions (type, created_at)
+        VALUES ('trade', COALESCE(%s, now())) RETURNING id;
+        """,
+        (now,),
     )
     if cost.amount > 0:
         # If the cost is positive, first exchange so we have the shares to trade.

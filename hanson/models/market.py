@@ -29,14 +29,23 @@ class Market(NamedTuple):
         author_user_id: int,
         title: str,
         description: str,
+        now: Optional[datetime] = None,
     ) -> Market:
+        """
+        Create a new market. By default, the database's current time is used as
+        the creation time, but optionally we can backdate the creation with the
+        `now` argument.
+        """
+        if now is not None:
+            assert now.tzinfo is not None
+
         market_id, created_at = tx.execute_fetch_one(
             """
-            INSERT INTO markets (author_user_id)
-            VALUES (%s)
+            INSERT INTO markets (author_user_id, created_at)
+            VALUES (%s, COALESCE(%s, now()))
             RETURNING id, created_at;
             """,
-            (author_user_id,),
+            (author_user_id, now),
         )
         tx.execute(
             """

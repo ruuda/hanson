@@ -38,7 +38,8 @@ def add_users(tx: Transaction) -> List[User]:
     ]
 
 
-def add_markets(tx: Transaction, author: User) -> List[Market]:
+def add_markets(tx: Transaction, author: User, now: datetime) -> List[Market]:
+    assert now.tzinfo is not None
     markets = []
 
     market = Market.create(
@@ -46,6 +47,7 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
         author_user_id=author.id,
         title="Does Deckard know?",
         description="Details omitted to avoid spoilers.",
+        now=now,
     )
     Outcome.create_discrete(tx, market.id, "Yes", Color.from_html_hex("#68a223"))
     Outcome.create_discrete(tx, market.id, "No", Color.from_html_hex("#a22a17"))
@@ -59,6 +61,7 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
             "Deckard has been tasked with retiring four replicants. "
             "Who will he retire first?"
         ),
+        now=now,
     )
     Outcome.create_discrete(tx, market.id, "Leon", Color.from_html_hex("#53a5ba"))
     Outcome.create_discrete(tx, market.id, "Pris", Color.from_html_hex("#c0321b"))
@@ -75,6 +78,7 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
             "But as Tyrell put it, the light that burns twice as bright "
             "burns half as long — and Roy has burned so very, very brightly."
         ),
+        now=now,
     )
     n = 10
     c0 = Color.from_html_hex("#006cff")
@@ -100,6 +104,7 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
             "How many questions will Rachael need to answer before the "
             "Voight-Kampff test is conclusive?"
         ),
+        now=now,
     )
     n = 5
     for i in range(n):
@@ -113,28 +118,36 @@ def add_markets(tx: Transaction, author: User) -> List[Market]:
     return markets
 
 
-def add_income(tx: Transaction, users: List[User], amount: Points) -> None:
+def add_income(
+    tx: Transaction, users: List[User], amount: Points, now: datetime
+) -> None:
     for user in users:
-        create_transaction_income(tx, user.id, amount)
+        create_transaction_income(tx, user.id, amount, now)
 
 
 def main() -> None:
+    # Backdate market creation to a fixed time in the past, so we can run
+    # the simulation for a ~year and also see the graphs in the webinterface.
+    now = datetime(2022, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
+
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)
     with conn.begin() as tx:
         users = add_users(tx)
 
-        add_income(tx, users, Points(Decimal("10.00")))
+        add_income(tx, users, Points(Decimal("10.00")), now)
 
         # For simplicity, the first user is going to be the author of all markets.
         etyrell = users[0]
-        markets = add_markets(tx, etyrell)
+        markets = add_markets(tx, etyrell, now)
 
         # We give this user some additional income to pay for funding the markets.
-        create_transaction_income(tx, etyrell.id, Points(Decimal("5.0") * len(markets)))
+        create_transaction_income(
+            tx, etyrell.id, Points(Decimal("5.0") * len(markets)), now
+        )
         for market in markets:
             create_transaction_fund_market(
-                tx, etyrell.id, market.id, Points(Decimal("5.00"))
+                tx, etyrell.id, market.id, Points(Decimal("5.00")), now
             )
 
         tx.commit()

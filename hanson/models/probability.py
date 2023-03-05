@@ -65,6 +65,12 @@ class ProbabilityDistribution(NamedTuple):
         denom = sum(numers)
         return [x / denom for x in numers]
 
+    def entropy(self) -> float:
+        """
+        Return the entropy of the distribution.
+        """
+        return -sum(p * float(logit) for p, logit in zip(self.ps(), self.logits))
+
     def interpolate(
         self, other: ProbabilityDistribution, t: Decimal
     ) -> ProbabilityDistribution:

@@ -226,6 +226,56 @@ class Simulator(NamedTuple):
         clock = Clock(t0)
         return Simulator(rng, conn, clock, users, markets, sims)
 
+    def sim_update_beliefs(self, tx: Transaction, sim: Sim) -> None:
+        """
+        Evolve the sim's beliefs by integrating various sources:
+        * The sim's own belief should become more extreme, so eventually it
+          starts expecting one particular outcome over all others.
+        * Add some randomness, to simulate the sim learning new things,
+          responding to events, or just changes in mood or whatever.
+        * Converge a little towards the market price. The sim thinks it knows
+          better, but the market can't be completely wrong.
+        """
+        for market in self.markets:
+            outcomes = Outcome.get_all_by_market(tx, market.id)
+            pool_accounts = [
+                MarketAccount.expect_pool_account(tx, market.id, outcome.id)
+                for outcome in outcomes.outcomes
+            ]
+            pool_pd = ProbabilityDistribution.from_pool_balances(
+                [pool_account.balance for pool_account in pool_accounts]
+            )
+            self_pd = sim.beliefs[market.id]
+
+            # Then step 10% towards the market prediction.
+            self_pd = self_pd.interpolate(pool_pd, Decimal("0.10"))
+
+            # Then step 5% in a random direction, to simulate evolving beliefs.
+            random_pd = random_probability_distribution(self.rng, outcomes)
+            self_pd = self_pd.interpolate(random_pd, Decimal("0.05"))
+
+            # If we are not already quite certain of our beliefs, then now we
+            # become a bit more certain of our beliefs. If we are very certain,
+            # then we become a bit less certain. Targeting a particular entropy
+            # range is mostly to keep the graphs interesting, so the market does
+            # not converge on a single outcome.
+            entropy = self_pd.entropy()
+            if entropy > 0.9:
+                self_pd = ProbabilityDistribution.from_float_logits(
+                    [float(x) * 1.1 for x in self_pd.logits]
+                )
+            elif entropy < 0.3:
+                self_pd = ProbabilityDistribution.from_float_logits(
+                    [float(x) * 0.9 for x in self_pd.logits]
+                )
+
+            print(f"Updating user {sim.user.id} for market {market.id}")
+            print(
+                f"  Before: {sim.beliefs[market.id]} ~ {sim.beliefs[market.id].entropy():.3f}"
+            )
+            print(f"  After:  {self_pd} ~ {self_pd.entropy():.3f}")
+            sim.beliefs[market.id] = self_pd
+
     def sim_trade_once(self, tx: Transaction, sim: Sim, budget: Points) -> Points:
         """
         Look at all markets, then given the budget, decide which market we could
@@ -234,7 +284,7 @@ class Simulator(NamedTuple):
         """
         assert budget > Points.zero()
 
-        best_roi = 0.0
+        best_roi = 1.0
         order: Optional[OrderDetails] = None
 
         for market in self.markets:
@@ -247,7 +297,7 @@ class Simulator(NamedTuple):
                 [pool_account.balance for pool_account in pool_accounts]
             )
             self_pd = sim.beliefs[market.id]
-            expected_roi = 1.0
+            expected_roi = 0.0
             for p_pool, p_self in zip(pool_pd.ps(), self_pd.ps()):
                 outcome_roi = p_self / p_pool
                 expected_roi += outcome_roi * p_self
@@ -299,10 +349,12 @@ class Simulator(NamedTuple):
             budget = user_points_account.balance // 10
             print(f"\nBudget for user {sim.user.id}: {budget}")
 
+            self.sim_update_beliefs(tx, sim)
+
             while budget > Points.zero():
                 points_spent = self.sim_trade_once(tx, sim, budget)
                 budget = budget - points_spent
-                if points_spent.is_zero():
+                if points_spent < Points(Decimal("0.50")):
                     break
 
                 # Pretend we spent five minutes pondering the trade.
@@ -334,7 +386,7 @@ def main() -> None:
             add_income(
                 tx,
                 simulator.users,
-                Points(Decimal("2.00")),
+                Points(Decimal("1.00")),
                 simulator.clock.current_time,
             )
             tx.commit()

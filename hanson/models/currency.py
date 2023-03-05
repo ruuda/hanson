@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 
 
 @dataclass(frozen=True, order=True)
@@ -37,6 +37,14 @@ class Points(Amount):
 
     def __neg__(self) -> Points:
         return Points(-self.amount)
+
+    def __floordiv__(self, other: int) -> Points:
+        """
+        Divide the amount, rounding towards zero to two decimal places.
+        """
+        return Points(
+            (self.amount / other).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+        )
 
     def __radd__(self, other: int) -> Points:
         # This method is needed to support `sum`, which starts with int 0.

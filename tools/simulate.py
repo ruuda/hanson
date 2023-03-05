@@ -14,12 +14,13 @@ The simulator simulates users trading, filling the database with dummy data.
 from __future__ import annotations
 
 from random import Random
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Tuple
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from decimal import Decimal
 
 from hanson.database import ConnectionPool, Transaction, connect_config
+from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.color import Color
 from hanson.models.config import Config
 from hanson.models.currency import Points
@@ -209,6 +210,39 @@ class Simulator(NamedTuple):
 
         return Simulator(rng, conn, t0, users, markets, sims)
 
+    def update_sim(self, sim: Sim) -> None:
+        with self.conn.begin() as tx:
+            user_points_account = UserAccount.expect_points_account(tx, sim.user.id)
+            # Per step, we aim to spend about 1/10 of our balance.
+            budget = user_points_account.balance // 10
+            print(f"\nBudget for user {sim.user.id}: {budget}")
+
+            market_rois: List[Tuple[float, int]] = []
+
+            for market in self.markets:
+                outcomes = Outcome.get_all_by_market(tx, market.id)
+                pool_accounts = [
+                    MarketAccount.expect_pool_account(tx, market.id, outcome.id)
+                    for outcome in outcomes.outcomes
+                ]
+                pool_pd = ProbabilityDistribution.from_pool_balances(
+                    [pool_account.balance for pool_account in pool_accounts]
+                )
+                self_pd = sim.beliefs[market.id]
+                expected_roi = 0.0
+                for p_pool, p_self in zip(pool_pd.ps(), self_pd.ps()):
+                    outcome_roi = p_self / p_pool
+                    expected_roi += outcome_roi * p_self
+                market_rois.append((expected_roi, market.id))
+                print(f"Market {market.id}:")
+                print(f"  expected roi: {expected_roi:.2f}")
+                print(f"  pool pd: {pool_pd}")
+                print(f"  self pd: {self_pd}")
+
+            market_rois.sort(reverse=True)
+            _roi, best_market_id = market_rois[0]
+            print(f"Will trade in market {best_market_id}")
+
 
 def main() -> None:
     # Backdate market creation to a fixed time in the past, so we can run
@@ -222,6 +256,9 @@ def main() -> None:
     for sim in simulator.sims:
         for market_id, pd in sim.beliefs.items():
             print(f"user={sim.user.id} market={market_id} => {pd}")
+
+    for sim in simulator.sims:
+        simulator.update_sim(sim)
 
 
 if __name__ == "__main__":

@@ -11,15 +11,19 @@
 The simulator simulates users trading, filling the database with dummy data.
 """
 
-from typing import List
+from __future__ import annotations
+
+from random import Random
+from typing import Dict, List, NamedTuple
 from datetime import datetime, timezone
+from dataclasses import dataclass
 from decimal import Decimal
 
-from hanson.database import Transaction, connect_config
+from hanson.database import ConnectionPool, Transaction, connect_config
 from hanson.models.color import Color
 from hanson.models.config import Config
 from hanson.models.currency import Points
-from hanson.models.outcome import Outcome
+from hanson.models.outcome import Outcome, Outcomes
 from hanson.models.market import Market
 from hanson.models.probability import ProbabilityDistribution
 from hanson.models.user import User
@@ -125,32 +129,99 @@ def add_income(
         create_transaction_income(tx, user.id, amount, now)
 
 
+def random_probability_distribution(
+    rng: Random, outcomes: Outcomes
+) -> ProbabilityDistribution:
+    """
+    Generate a random probability distribution over the given outcomes. By
+    default we use a range of -5 to 0 for the logits, which means the ratios
+    of the probabilities in the most extreme case will be about 1:150.
+    """
+    # TODO: For outcomes that are not discrete, this distribution will be quite
+    # wonky. We can do a lot better by generating a normal distribution or
+    # something that looks like it.
+    logits = [Decimal(rng.uniform(-5.0, 0.0)) for _ in range(len(outcomes.outcomes))]
+    return ProbabilityDistribution(logits)
+
+
+@dataclass
+class Sim:
+    """
+    A Sim is a simulation of a user who is trading in the markets. The database
+    itself stores all information about the user and their predictions, but for
+    the purpose of the simulation, we also track the user's internal beliefs
+    that may not be reflected in the markets.
+    """
+
+    user: User
+
+    # For every market (by id), the user's current belief about the
+    # probabilities for each outcome.
+    beliefs: Dict[int, ProbabilityDistribution]
+
+
+class Simulator(NamedTuple):
+    rng: Random
+    conn: ConnectionPool
+    t0: datetime
+    users: List[User]
+    markets: List[Market]
+    sims: List[Sim]
+
+    @staticmethod
+    def new(conn: ConnectionPool, t0: datetime, seed: int = 42) -> Simulator:
+        rng = Random(seed)
+
+        with conn.begin() as tx:
+            users = add_users(tx)
+
+            add_income(tx, users, Points(Decimal("10.00")), t0)
+
+            # For simplicity, the first user is going to be the author of all markets.
+            etyrell = users[0]
+            markets = add_markets(tx, etyrell, t0)
+
+            # We give this user some additional income to pay for funding the markets.
+            create_transaction_income(
+                tx, etyrell.id, Points(Decimal("5.0") * len(markets)), t0
+            )
+            for market in markets:
+                create_transaction_fund_market(
+                    tx, etyrell.id, market.id, Points(Decimal("5.00")), t0
+                )
+
+            market_outcomes = [
+                Outcome.get_all_by_market(tx, market.id) for market in markets
+            ]
+
+            tx.commit()
+
+        sims = [
+            Sim(
+                user=user,
+                beliefs={
+                    market.id: random_probability_distribution(rng, outcomes)
+                    for market, outcomes in zip(markets, market_outcomes)
+                },
+            )
+            for user in users
+        ]
+
+        return Simulator(rng, conn, t0, users, markets, sims)
+
+
 def main() -> None:
     # Backdate market creation to a fixed time in the past, so we can run
     # the simulation for a ~year and also see the graphs in the webinterface.
-    now = datetime(2022, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
+    t0 = datetime(2022, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
 
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)
-    with conn.begin() as tx:
-        users = add_users(tx)
 
-        add_income(tx, users, Points(Decimal("10.00")), now)
-
-        # For simplicity, the first user is going to be the author of all markets.
-        etyrell = users[0]
-        markets = add_markets(tx, etyrell, now)
-
-        # We give this user some additional income to pay for funding the markets.
-        create_transaction_income(
-            tx, etyrell.id, Points(Decimal("5.0") * len(markets)), now
-        )
-        for market in markets:
-            create_transaction_fund_market(
-                tx, etyrell.id, market.id, Points(Decimal("5.00")), now
-            )
-
-        tx.commit()
+    simulator = Simulator.new(conn, t0)
+    for sim in simulator.sims:
+        for market_id, pd in sim.beliefs.items():
+            print(f"user={sim.user.id} market={market_id} => {pd}")
 
 
 if __name__ == "__main__":

@@ -324,24 +324,6 @@ class OrderDetails:
 
         outcomes = Outcome.get_all_by_market(tx, market_id)
 
-        pool_accounts = [
-            MarketAccount.expect_pool_account(tx, market_id, outcome.id)
-            for outcome in outcomes.outcomes
-        ]
-        user_accounts = [
-            UserAccount.get_share_account(
-                tx,
-                user_id=user_id,
-                market_id=market_id,
-                outcome_id=outcome.id,
-            )
-            for outcome in outcomes.outcomes
-        ]
-        user_balances = [
-            account.balance if account is not None else Shares.zero(outcome.id)
-            for account, outcome in zip(user_accounts, outcomes.outcomes)
-        ]
-
         # Get the user's probabilities from the query parameters. There is nothing
         # that forces the user to enter a normalized probability distribution, but
         # we normalize it when we construct the `ProbabilityDistribution` later.
@@ -354,10 +336,52 @@ class OrderDetails:
             except ValueError:
                 raw_user_probabilities.append(1e-10)
 
+        return OrderDetails.for_target_distribution(
+            tx,
+            user_id=user_id,
+            market=market,
+            outcomes=outcomes,
+            pd_target=ProbabilityDistribution.from_probabilities(
+                raw_user_probabilities
+            ),
+            max_spend=max_spend,
+        )
+
+    @staticmethod
+    def for_target_distribution(
+        tx: Transaction,
+        user_id: int,
+        market: Market,
+        outcomes: Outcomes,
+        pd_target: ProbabilityDistribution,
+        max_spend: Points,
+    ) -> OrderDetails:
+        """
+        Given a target distribution and a maximum amount to spend, correct the
+        amounts if needed to stay below the max spend, then return the details
+        of the trade.
+        """
+        pool_accounts = [
+            MarketAccount.expect_pool_account(tx, market.id, outcome.id)
+            for outcome in outcomes.outcomes
+        ]
+        user_accounts = [
+            UserAccount.get_share_account(
+                tx,
+                user_id=user_id,
+                market_id=market.id,
+                outcome_id=outcome.id,
+            )
+            for outcome in outcomes.outcomes
+        ]
+        user_balances = [
+            account.balance if account is not None else Shares.zero(outcome.id)
+            for account, outcome in zip(user_accounts, outcomes.outcomes)
+        ]
+
         pd_before = ProbabilityDistribution.from_pool_balances(
             [a.balance for a in pool_accounts]
         )
-        pd_target = ProbabilityDistribution.from_probabilities(raw_user_probabilities)
         costs = pd_before.cost_for_update(pd_target)
 
         # Round the costs to two decimals, because points have only two decimals.
@@ -410,7 +434,7 @@ class OrderDetails:
     ) -> OrderDetails:
         """
         Return the order that would reduce a user's share balance to zero for
-        all of the user's share accounts in the given market.
+        all the user's share accounts in the given market.
         """
         outcomes = Outcome.get_all_by_market(tx, market.id)
 

@@ -36,6 +36,13 @@ class ProbabilityDistribution(NamedTuple):
         return ProbabilityDistribution([logit - offset for logit in logits])
 
     @staticmethod
+    def from_float_logits(float_logits: List[float]) -> ProbabilityDistribution:
+        # See also `from_pool_balances`, this is just that without the negation.
+        logits = [Decimal.from_float(x) for x in float_logits]
+        offset = Decimal.from_float(math.log(sum(sorted(math.exp(x) for x in logits))))
+        return ProbabilityDistribution([logit - offset for logit in logits])
+
+    @staticmethod
     def from_probabilities(ps: List[float]) -> ProbabilityDistribution:
         """
         Construct a probability distribution given the probabilities. They do

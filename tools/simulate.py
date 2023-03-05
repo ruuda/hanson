@@ -14,8 +14,8 @@ The simulator simulates users trading, filling the database with dummy data.
 from __future__ import annotations
 
 from random import Random
-from typing import Dict, List, NamedTuple, Tuple
-from datetime import datetime, timezone
+from typing import Dict, List, NamedTuple, Optional
+from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -23,7 +23,7 @@ from hanson.database import ConnectionPool, Transaction, connect_config
 from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.color import Color
 from hanson.models.config import Config
-from hanson.models.currency import Points
+from hanson.models.currency import Points, Shares
 from hanson.models.outcome import Outcome, Outcomes
 from hanson.models.market import Market
 from hanson.models.probability import ProbabilityDistribution
@@ -31,7 +31,9 @@ from hanson.models.user import User
 from hanson.models.transaction import (
     create_transaction_income,
     create_transaction_fund_market,
+    create_transaction_execute_order,
 )
+from hanson.routes.market import OrderDetails
 
 
 def add_users(tx: Transaction) -> List[User]:
@@ -141,8 +143,8 @@ def random_probability_distribution(
     # TODO: For outcomes that are not discrete, this distribution will be quite
     # wonky. We can do a lot better by generating a normal distribution or
     # something that looks like it.
-    logits = [Decimal(rng.uniform(-5.0, 0.0)) for _ in range(len(outcomes.outcomes))]
-    return ProbabilityDistribution(logits)
+    logits = [rng.uniform(-5.0, 0.0) for _ in range(len(outcomes.outcomes))]
+    return ProbabilityDistribution.from_float_logits(logits)
 
 
 @dataclass
@@ -210,14 +212,15 @@ class Simulator(NamedTuple):
 
         return Simulator(rng, conn, t0, users, markets, sims)
 
-    def update_sim(self, sim: Sim) -> None:
+    def update_sim(self, sim: Sim, now: datetime) -> None:
         with self.conn.begin() as tx:
             user_points_account = UserAccount.expect_points_account(tx, sim.user.id)
             # Per step, we aim to spend about 1/10 of our balance.
             budget = user_points_account.balance // 10
             print(f"\nBudget for user {sim.user.id}: {budget}")
 
-            market_rois: List[Tuple[float, int]] = []
+            best_roi = 0.0
+            order: Optional[OrderDetails] = None
 
             for market in self.markets:
                 outcomes = Outcome.get_all_by_market(tx, market.id)
@@ -229,19 +232,49 @@ class Simulator(NamedTuple):
                     [pool_account.balance for pool_account in pool_accounts]
                 )
                 self_pd = sim.beliefs[market.id]
-                expected_roi = 0.0
+                expected_roi = 1.0
                 for p_pool, p_self in zip(pool_pd.ps(), self_pd.ps()):
                     outcome_roi = p_self / p_pool
                     expected_roi += outcome_roi * p_self
-                market_rois.append((expected_roi, market.id))
+
                 print(f"Market {market.id}:")
                 print(f"  expected roi: {expected_roi:.2f}")
                 print(f"  pool pd: {pool_pd}")
                 print(f"  self pd: {self_pd}")
 
-            market_rois.sort(reverse=True)
-            _roi, best_market_id = market_rois[0]
-            print(f"Will trade in market {best_market_id}")
+                if expected_roi > best_roi:
+                    best_roi = expected_roi
+                    order = OrderDetails.for_target_distribution(
+                        tx,
+                        user_id=sim.user.id,
+                        market=market,
+                        outcomes=outcomes,
+                        pd_target=self_pd,
+                        max_spend=budget,
+                    )
+
+            if order is not None:
+                print(f"Will trade in market {order.market.id}:")
+                print(f"  pd_after:     {order.pd_after}")
+                print(f"  costs_shares: {order.costs_shares}")
+                print(f"  cost_points:  {order.cost_points}")
+
+                tx_id = create_transaction_execute_order(
+                    tx,
+                    debit_user_id=sim.user.id,
+                    credit_market_id=order.market.id,
+                    cost=order.cost_points,
+                    amounts=[
+                        Shares(cost, outcome_id=outcome.id)
+                        for outcome, cost in zip(
+                            order.outcomes.outcomes, order.costs_shares
+                        )
+                    ],
+                    now=now,
+                )
+                print(f"  order tx_id:  {tx_id}")
+
+            tx.commit()
 
 
 def main() -> None:
@@ -257,8 +290,12 @@ def main() -> None:
         for market_id, pd in sim.beliefs.items():
             print(f"user={sim.user.id} market={market_id} => {pd}")
 
-    for sim in simulator.sims:
-        simulator.update_sim(sim)
+    t = t0
+
+    for _ in range(10):
+        for sim in simulator.sims:
+            t = t + timedelta(hours=1)
+            simulator.update_sim(sim, now=t)
 
 
 if __name__ == "__main__":

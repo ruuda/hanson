@@ -115,7 +115,7 @@ def render_graph(
 
     polylines: Dict[int, List[str]] = {}
 
-    while current_tick > start_tick:
+    while current_tick >= start_tick:
         current_time, current_ps = ps_history.history[current_elem]
 
         if current_time.timestamp() // bin_size_secs > current_tick:
@@ -128,15 +128,9 @@ def render_graph(
 
         x = current_tick - start_tick
         start_y = 0.0
-        bar_width = 0.8
 
         for outcome, p in zip(outcomes, current_ps.ps()):
             height = p * axis_height
-            result.append(
-                f'<rect x="{(x - 0.5 - bar_width / 2) * x_scale:.2f}" y="{start_y:.3f}" '
-                f'width="{bar_width * x_scale:.2f}" height="{height:.3f}" '
-                f'fill="{outcome.get_sanitized_color()}" opacity="0.3"></rect>'
-            )
             start_y += p * axis_height
 
             polyline = polylines.setdefault(outcome.id, [])
@@ -155,6 +149,20 @@ def render_graph(
             )
 
         current_tick -= 1
+
+    prev_points = [
+        f"{num_ticks * x_scale:.2f},{axis_height:.2f}",
+        f"0.0,{axis_height:.2f}",
+    ]
+
+    for outcome in reversed(list(outcomes)):
+        points = " ".join(polylines[outcome.id] + list(reversed(prev_points)))
+        prev_points = polylines[outcome.id]
+        color = outcome.get_sanitized_color()
+        result.append(
+            f'<polyline points="{points}" '
+            f'fill="{color}" stroke="none" opacity="0.3"/>'
+        )
 
     for outcome in outcomes:
         points = " ".join(polylines[outcome.id])

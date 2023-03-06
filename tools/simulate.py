@@ -365,10 +365,10 @@ class Simulator(NamedTuple):
 
 
 def main() -> None:
-    # Backdate market creation to a fixed time in the past, so we can run
-    # the simulation for a ~year and also see the graphs in the webinterface.
-    t0 = datetime(2022, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
-    t1 = datetime(2023, 3, 1, 15, 0, 0, tzinfo=timezone.utc)
+    # Backdate market creation to about a year in the past, so we can run the
+    # simulation for a ~year and also see the graphs in the webinterface.
+    t1 = datetime.now(tz=timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    t0 = t1 - timedelta(days=400)
 
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)

@@ -214,13 +214,13 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         12 * 60,
     )
 
-    # I want at most 200 bars, so check which multiple of the time interval can
+    # I want at most 150 bars, so check which multiple of the time interval can
     # fit the most of them. Fall back to a multiple of 1 day.
-    bin_size = timedelta(days=1 + graph_duration.total_seconds() // (3600 * 24 * 100))
+    bin_size = timedelta(days=1 + graph_duration.total_seconds() // (3600 * 24 * 150))
 
     for bar_duration_minutes in human_friendly_interval_minutes:
         num_bars = graph_duration.total_seconds() / (60 * bar_duration_minutes)
-        if num_bars < 100:
+        if num_bars < 150:
             bin_size = timedelta(minutes=bar_duration_minutes)
             break
 

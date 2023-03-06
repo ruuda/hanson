@@ -355,11 +355,12 @@ class Simulator(NamedTuple):
             while budget > Points.zero():
                 points_spent = self.sim_trade_once(tx, sim, budget // 2)
                 budget = budget - points_spent
-                if points_spent < Points(Decimal("0.50")):
-                    break
 
                 # Pretend we spent five minutes pondering the trade.
                 self.clock.tick(timedelta(minutes=5))
+
+                if points_spent < Points(Decimal("0.50")):
+                    break
 
             tx.commit()
 
@@ -367,8 +368,10 @@ class Simulator(NamedTuple):
 def main() -> None:
     # Backdate market creation to about a year in the past, so we can run the
     # simulation for a ~year and also see the graphs in the webinterface.
-    t1 = datetime.now(tz=timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
-    t0 = t1 - timedelta(days=400)
+    start_day = datetime.now(tz=timezone.utc).date().toordinal()
+    noon_at = lambda i: datetime.fromordinal(start_day + i).replace(hour=12, tzinfo=timezone.utc)
+    t0 = noon_at(-400)
+    t1 = noon_at(0)
 
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)
@@ -378,11 +381,18 @@ def main() -> None:
         for market_id, pd in sim.beliefs.items():
             print(f"user={sim.user.id} market={market_id} => {pd}")
 
+    day = -400
     while simulator.clock.current_time < t1:
-        for sim in simulator.sims:
+
+        shuffled_sims = [s for s in simulator.sims]
+        simulator.rng.shuffle(shuffled_sims)
+        for sim in shuffled_sims:
             simulator.sim_update(sim)
 
-        simulator.clock.tick(timedelta(days=1))
+        day += 1
+        t = noon_at(day)
+        simulator.clock.advance_to(noon_at(day))
+
         with simulator.conn.begin() as tx:
             add_income(
                 tx,

@@ -406,12 +406,14 @@ class OrderDetails:
         cost = Points(-min(*new_balances))
 
         pd_after = pd_target
-        if cost > max_spend:
+        while cost > max_spend:
             t = max_spend.amount / cost.amount
-            pd_after = pd_before.interpolate(pd_target, t)
+            pd_after = pd_before.interpolate(pd_after, t)
             costs = pd_before.cost_for_update(pd_after)
             costs = [math.ceil(x * 100) / Decimal("100.00") for x in costs]
             cost = Points(max(*costs))
+
+        assert cost <= max_spend
 
         return OrderDetails(
             market=market,

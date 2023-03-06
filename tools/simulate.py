@@ -247,12 +247,12 @@ class Simulator(NamedTuple):
             )
             self_pd = sim.beliefs[market.id]
 
-            # Then step 10% towards the market prediction.
-            self_pd = self_pd.interpolate(pool_pd, Decimal("0.10"))
+            # Then step 4% towards the market prediction.
+            self_pd = self_pd.interpolate(pool_pd, Decimal("0.04"))
 
-            # Then step 5% in a random direction, to simulate evolving beliefs.
+            # Then step 4% in a random direction, to simulate evolving beliefs.
             random_pd = random_probability_distribution(self.rng, outcomes)
-            self_pd = self_pd.interpolate(random_pd, Decimal("0.05"))
+            self_pd = self_pd.interpolate(random_pd, Decimal("0.04"))
 
             # If we are not already quite certain of our beliefs, then now we
             # become a bit more certain of our beliefs. If we are very certain,
@@ -262,11 +262,11 @@ class Simulator(NamedTuple):
             entropy = self_pd.entropy()
             if entropy > 0.9:
                 self_pd = ProbabilityDistribution.from_float_logits(
-                    [float(x) * 1.1 for x in self_pd.logits]
+                    [float(x) * 1.05 for x in self_pd.logits]
                 )
             elif entropy < 0.3:
                 self_pd = ProbabilityDistribution.from_float_logits(
-                    [float(x) * 0.9 for x in self_pd.logits]
+                    [float(x) * 0.95 for x in self_pd.logits]
                 )
 
             print(f"Updating user {sim.user.id} for market {market.id}")
@@ -319,6 +319,7 @@ class Simulator(NamedTuple):
                 )
 
         if order is not None:
+            assert order.cost_points <= budget, f"{order.cost_points} <= {budget}"
             print(f"Will trade in market {order.market.id}:")
             print(f"  pd_after:     {order.pd_after}")
             print(f"  costs_shares: {order.costs_shares}")
@@ -369,9 +370,11 @@ def main() -> None:
     # Backdate market creation to about a year in the past, so we can run the
     # simulation for a ~year and also see the graphs in the webinterface.
     start_day = datetime.now(tz=timezone.utc).date().toordinal()
-    noon_at = lambda i: datetime.fromordinal(start_day + i).replace(hour=12, tzinfo=timezone.utc)
-    t0 = noon_at(-400)
-    t1 = noon_at(0)
+    midnight_at = lambda i: datetime.fromordinal(start_day + i).replace(
+        tzinfo=timezone.utc
+    )
+    t0 = midnight_at(-400)
+    t1 = midnight_at(0)
 
     config = Config.load_from_toml_file("config.toml")
     conn = connect_config(config)
@@ -383,24 +386,32 @@ def main() -> None:
 
     day = -400
     while simulator.clock.current_time < t1:
-
         shuffled_sims = [s for s in simulator.sims]
+
+        # At midnight we give everybody some income.
+        simulator.clock.advance_to(midnight_at(day))
+        with simulator.conn.begin() as tx:
+            add_income(
+                tx,
+                simulator.users,
+                Points(Decimal("0.15")),
+                simulator.clock.current_time,
+            )
+            tx.commit()
+
+        # We let all users trade once in the morning.
+        simulator.clock.advance_to(midnight_at(day) + timedelta(hours=9))
+        simulator.rng.shuffle(shuffled_sims)
+        for sim in shuffled_sims:
+            simulator.sim_update(sim)
+
+        # And then once in the afternoon.
+        simulator.clock.advance_to(midnight_at(day) + timedelta(hours=17))
         simulator.rng.shuffle(shuffled_sims)
         for sim in shuffled_sims:
             simulator.sim_update(sim)
 
         day += 1
-        t = noon_at(day)
-        simulator.clock.advance_to(noon_at(day))
-
-        with simulator.conn.begin() as tx:
-            add_income(
-                tx,
-                simulator.users,
-                Points(Decimal("1.00")),
-                simulator.clock.current_time,
-            )
-            tx.commit()
 
 
 if __name__ == "__main__":

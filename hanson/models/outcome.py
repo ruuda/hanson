@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from hanson.models.color import Color
 from hanson.database import Transaction
+from hanson.models.probability import ProbabilityDistribution
 
 
 @dataclass(frozen=True)
@@ -165,6 +166,49 @@ class OutcomesDiscrete(NamedTuple):
 
 class OutcomesFloat(NamedTuple):
     outcomes: List[OutcomeFloat]
+
+    def get_quantiles(
+        self, quantiles: List[float], pd: ProbabilityDistribution
+    ) -> List[float]:
+        """
+        Given a probability distribution for these outcomes, return the desired
+        quantiles.
+        """
+        values = [oc.value for oc in self.outcomes]
+        assert (
+            list(sorted(values)) == values
+        ), "Outcomes must be sorted by ascending value."
+        assert list(sorted(quantiles)) == quantiles, "Quantiles must be sorted."
+        assert len(values) > 1, "Must have at least two outcomes."
+
+        p0 = 0.0
+        x0 = self.outcomes[0].value
+        xp_iter = iter(zip(values, pd.ps()))
+        q_iter = iter(quantiles)
+        x1, p1 = next(xp_iter)
+        q = next(q_iter)
+
+        result: List[float] = []
+
+        try:
+            while True:
+                if p1 >= q:
+                    # The desired quantile lies inside this segment.
+                    t = (q - p0) / (p1 - p0)
+                    x = x0 * (1.0 - t) + x1 * t
+                    result.append(x)
+                    q = next(q_iter)
+
+                x0, p0 = x1, p1
+                x1, p = next(xp_iter)
+                p1 = p0 + p
+
+        except StopIteration:
+            # The end should only be triggered by exhausting the quantile
+            # iterator, never by exhausting the probability iterator.
+            assert len(result) == len(quantiles)
+
+        return result
 
 
 class OutcomesDatetime(NamedTuple):

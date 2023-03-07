@@ -205,9 +205,12 @@ class OutcomesFloat(NamedTuple):
                 p1 = p0 + p
 
         except StopIteration:
-            # The end should only be triggered by exhausting the quantile
-            # iterator, never by exhausting the probability iterator.
-            assert len(result) == len(quantiles)
+            # If we exhaust the quantile iterator, then we are done. If we
+            # exhaust the probability iterator, that should not happen for
+            # quantiles in 0..1, but it can happen for invalid inputs past 1,
+            # in that case we repeat the upper bound.
+            while len(result) < len(quantiles):
+                result.append(x1)
 
         return result
 

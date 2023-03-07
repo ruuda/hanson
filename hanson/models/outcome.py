@@ -181,11 +181,24 @@ class OutcomesFloat(NamedTuple):
         assert list(sorted(quantiles)) == quantiles, "Quantiles must be sorted."
         assert len(values) > 1, "Must have at least two outcomes."
 
-        p0 = 0.0
-        x0 = self.outcomes[0].value
-        xp_iter = iter(zip(values, pd.ps()))
-        q_iter = iter(quantiles)
+        # We treat the probability density function as piecewise uniform, with
+        # bars centered on the x-coordinates. This then makes the cumulative
+        # distribution function piecewise linear. For the first and last value,
+        # we essentially only have "half" the bar.
+        midpoints = [0.5 * (xa + xb) for xa, xb in zip(values[:-1], values[1:])]
+        xs = values[:1] + midpoints + values[-1:]
+
+        # Build the cumulative distribution function, into ys.
+        cp = 0.0
+        ys = [0.0]
+        for p in pd.ps():
+            cp = cp + p
+            ys.append(cp)
+
+        xp_iter = iter(zip(xs, ys))
+        x0, p0 = next(xp_iter)
         x1, p1 = next(xp_iter)
+        q_iter = iter(quantiles)
         q = next(q_iter)
 
         result: List[float] = []
@@ -201,8 +214,7 @@ class OutcomesFloat(NamedTuple):
                     continue
 
                 x0, p0 = x1, p1
-                x1, p = next(xp_iter)
-                p1 = p0 + p
+                x1, p1 = next(xp_iter)
 
         except StopIteration:
             # If we exhaust the quantile iterator, then we are done. If we

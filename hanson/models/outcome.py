@@ -198,6 +198,7 @@ class OutcomesFloat(NamedTuple):
                     x = x0 * (1.0 - t) + x1 * t
                     result.append(x)
                     q = next(q_iter)
+                    continue
 
                 x0, p0 = x1, p1
                 x1, p = next(xp_iter)

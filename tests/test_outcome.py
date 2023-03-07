@@ -27,3 +27,16 @@ def test_outcomes_float_get_quantiles() -> None:
     assert sum_abs_diff(os.get_quantiles([0.3], pd), [2.0]) < 1e-6
     assert sum_abs_diff(os.get_quantiles([0.6], pd), [5.0]) < 1e-6
     assert sum_abs_diff(os.get_quantiles([1.0], pd), [7.0]) < 1e-6
+
+    # The same should hold regardless of whether we asked for the quantiles one
+    # by one or all in one batch.
+    assert (
+        sum_abs_diff(os.get_quantiles([0.1, 0.3, 0.6, 1.0], pd), [1.0, 2.0, 5.0, 7.0])
+        < 1e-6
+    )
+
+    # If we ask for a cumulative probability in between two data points, we
+    # should get the value in between.
+    assert sum_abs_diff(os.get_quantiles([0.20], pd), [1.5]) < 1e-6
+    assert sum_abs_diff(os.get_quantiles([0.45], pd), [3.5]) < 1e-6
+    assert sum_abs_diff(os.get_quantiles([0.7, 0.8, 0.9], pd), [5.5, 6.0, 6.5]) < 1e-6

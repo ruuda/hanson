@@ -13,11 +13,12 @@ The simulator simulates users trading, filling the database with dummy data.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
+from decimal import Decimal
+from math import log
 from random import Random
 from typing import Dict, List, NamedTuple, Optional
-from datetime import datetime, timezone, timedelta
-from dataclasses import dataclass
-from decimal import Decimal
 
 from hanson.database import ConnectionPool, Transaction, connect_config
 from hanson.models.account import MarketAccount, UserAccount
@@ -252,13 +253,20 @@ class Simulator(NamedTuple):
                 # discrete, then we should also modify our distribution to look
                 # a little more like a bell curve, with greater probability
                 # close to the median, and smaller probability further away.
-                # TODO: This is not working well, I need to sort out the bounds.
-                p50, = outcomes.get_quantiles([0.77], pool_pd)
-                p50 = p50 + self.rng.normalvariate(mu=0.0, sigma=5.0)
-                bell_pd = ProbabilityDistribution.from_float_logits([
-                    -0.01 * (p50 - oc.value) ** 2.0 for oc in outcomes.outcomes
-                ])
-                self_pd = self_pd.interpolate(bell_pd, Decimal("0.02"))
+                [p10, p50, p90] = outcomes.get_quantiles([0.10, 0.50, 0.90], pool_pd)
+                print(f"Current percentiles: {p10=} {p50=} {p90=}")
+                d = log(p10) - log(p90)
+                # Add a small bias to try and move the average up over time,
+                # if only because it makes the graph prettier.
+                p50 = p50 + self.rng.normalvariate(mu=0.0, sigma=10.0)
+                bell_pd = ProbabilityDistribution.from_float_logits(
+                    [
+                        -3.0 * (log(p50) - log(oc.value)) ** 2.0 / (d * d)
+                        for oc in outcomes.outcomes
+                    ]
+                )
+                print(f"{pool_pd=} {bell_pd=}")
+                self_pd = self_pd.interpolate(bell_pd, Decimal("0.01"))
 
             else:
                 # For discrete probability distributions, just step towards the
@@ -322,7 +330,7 @@ class Simulator(NamedTuple):
             print(f"  pool pd: {pool_pd}")
             print(f"  self pd: {self_pd}")
 
-            if expected_roi > best_roi:
+            if expected_roi > best_roi and self.rng.uniform(0.0, 1.0) > 0.20:
                 best_roi = expected_roi
                 order = OrderDetails.for_target_distribution(
                     tx,

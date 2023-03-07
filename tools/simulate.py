@@ -24,7 +24,7 @@ from hanson.models.account import MarketAccount, UserAccount
 from hanson.models.color import Color
 from hanson.models.config import Config
 from hanson.models.currency import Points, Shares
-from hanson.models.outcome import Outcome, Outcomes
+from hanson.models.outcome import Outcome, Outcomes, OutcomesFloat
 from hanson.models.market import Market
 from hanson.models.probability import ProbabilityDistribution
 from hanson.models.user import User
@@ -247,8 +247,23 @@ class Simulator(NamedTuple):
             )
             self_pd = sim.beliefs[market.id]
 
-            # Then step 4% towards the market prediction.
-            self_pd = self_pd.interpolate(pool_pd, Decimal("0.04"))
+            if isinstance(outcomes, OutcomesFloat):
+                # If the data is a continuous probability distribution, not
+                # discrete, then we should also modify our distribution to look
+                # a little more like a bell curve, with greater probability
+                # close to the median, and smaller probability further away.
+                # TODO: This is not working well, I need to sort out the bounds.
+                p50, = outcomes.get_quantiles([0.77], pool_pd)
+                p50 = p50 + self.rng.normalvariate(mu=0.0, sigma=5.0)
+                bell_pd = ProbabilityDistribution.from_float_logits([
+                    -0.01 * (p50 - oc.value) ** 2.0 for oc in outcomes.outcomes
+                ])
+                self_pd = self_pd.interpolate(bell_pd, Decimal("0.02"))
+
+            else:
+                # For discrete probability distributions, just step towards the
+                # market prediction.
+                self_pd = self_pd.interpolate(pool_pd, Decimal("0.04"))
 
             # Then step 4% in a random direction, to simulate evolving beliefs.
             random_pd = random_probability_distribution(self.rng, outcomes)

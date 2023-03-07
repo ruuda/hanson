@@ -8,13 +8,10 @@
   <div>
     <figure>
       {{graph | safe}}
-      <figcaption>
-        <a href="?graph_range=all">All time</a> |
-        <a href="?graph_range=365d">1 year</a> |
-        <a href="?graph_range=90d">90 days</a> |
-        <a href="?graph_range=30d">30 days</a> |
-        <a href="?graph_range=7d">7 days</a>   |
-        <a href="?graph_range=24h">24 hours</a>
+      <figcaption class="picker">
+        {% for r in graph_ranges %}
+        <a href="?graph_range={{r.id}}" {% if r.is_selected %} class="selected"{% endif %}>{{r.label}}</a>
+        {% endfor %}
       </figcaption>
     </figure>
     <p class="pre">{{market.description}}</p>

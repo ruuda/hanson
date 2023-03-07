@@ -96,8 +96,22 @@ p, figcaption, table {
   margin-bottom: 1.7rem;
 }
 
-figcaption {
-  color: #eee;
+.picker {
+  border: 1px solid #eee;
+  border-radius: 0.2em;
+  padding: 0.2rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.picker a {
+  margin-right: 0.8rem;
+  opacity: 0.7;
+}
+
+.picker a.selected {
+  font-weight: 600;
+  opacity: 1.0;
 }
 
 input, label, textarea {

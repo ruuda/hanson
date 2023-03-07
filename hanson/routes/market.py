@@ -115,6 +115,13 @@ def route_post_market_new(tx: Transaction) -> Response:
     return Response.redirect_see_other(f"/market/{market.id}")
 
 
+@dataclass(frozen=True)
+class GraphRange:
+    id: str
+    label: str
+    is_selected: bool
+
+
 @app.get("/market/<int:market_id>")
 @with_tx
 def route_get_market(tx: Transaction, market_id: int) -> Response:
@@ -236,6 +243,18 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
         end_time=now,
     )
 
+    graph_range_labels = {
+        "all": "All time",
+        "356d": "1 year",
+        "90d": "90 days",
+        "30d": "30 days",
+        "7d": "7 days",
+        "24h": "24 hours",
+    }
+    graph_ranges = [
+        GraphRange(k, v, graph_range == k) for k, v in graph_range_labels.items()
+    ]
+
     return Response.ok_html(
         render_template(
             "market.html",
@@ -251,6 +270,7 @@ def route_get_market(tx: Transaction, market_id: int) -> Response:
             unrealized_gains=unrealized_gains,
             total_gains=realized_gains.realized_gains + unrealized_gains,
             graph=graph,
+            graph_ranges=graph_ranges,
             zip=zip,
         )
     )

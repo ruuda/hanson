@@ -376,7 +376,7 @@ class Simulator(NamedTuple):
             budget = user_points_account.balance // 3
             print(f"\nBudget for user {sim.user.id}: {budget}")
 
-            while budget > Points.zero():
+            while budget > Points(Decimal("0.50")):
                 points_spent = self.sim_trade_once(tx, sim, budget // 2)
                 budget = budget - points_spent
 
@@ -413,26 +413,29 @@ def main() -> None:
 
         # At midnight we give everybody some income.
         simulator.clock.advance_to(midnight_at(day))
+
         with simulator.conn.begin() as tx:
             add_income(
                 tx,
                 simulator.users,
-                Points(Decimal("0.15")),
+                Points(Decimal("0.20")),
                 simulator.clock.current_time,
             )
             tx.commit()
 
-        # We let all users trade once in the morning.
-        simulator.clock.advance_to(midnight_at(day) + timedelta(hours=9))
-        simulator.rng.shuffle(shuffled_sims)
-        for sim in shuffled_sims:
-            simulator.sim_update(sim)
+        # Trade only on weekdays, Hanson is meant to be internal to organizations.
+        if simulator.clock.current_time.isoweekday() <= 5:
+            # We let all users trade once in the morning.
+            simulator.clock.advance_to(midnight_at(day) + timedelta(hours=9))
+            simulator.rng.shuffle(shuffled_sims)
+            for sim in shuffled_sims:
+                simulator.sim_update(sim)
 
-        # And then once in the afternoon.
-        simulator.clock.advance_to(midnight_at(day) + timedelta(hours=17))
-        simulator.rng.shuffle(shuffled_sims)
-        for sim in shuffled_sims:
-            simulator.sim_update(sim)
+            # And then once in the afternoon.
+            simulator.clock.advance_to(midnight_at(day) + timedelta(hours=17))
+            simulator.rng.shuffle(shuffled_sims)
+            for sim in shuffled_sims:
+                simulator.sim_update(sim)
 
         day += 1
 

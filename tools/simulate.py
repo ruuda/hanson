@@ -258,7 +258,7 @@ class Simulator(NamedTuple):
                 d = log(p10) - log(p90)
                 # Add a small bias to try and move the average up over time,
                 # if only because it makes the graph prettier.
-                p50 = p50 + self.rng.normalvariate(mu=0.0, sigma=10.0)
+                p50 = abs(p50 + self.rng.normalvariate(mu=0.0, sigma=10.0))
                 bell_pd = ProbabilityDistribution.from_float_logits(
                     [
                         -3.0 * (log(p50) - log(oc.value)) ** 2.0 / (d * d)
@@ -291,6 +291,11 @@ class Simulator(NamedTuple):
                 self_pd = ProbabilityDistribution.from_float_logits(
                     [float(x) * 0.95 for x in self_pd.logits]
                 )
+
+            # With a small probability, simulate that new information becomes
+            # known, and we completely replace our beliefs.
+            if self.rng.uniform(0.0, 1.0) < 0.01:
+                self_pd = self_pd.interpolate(random_pd, Decimal("0.50"))
 
             print(f"Updating user {sim.user.id} for market {market.id}")
             print(

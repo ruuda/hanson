@@ -95,9 +95,9 @@ def render_graph(
     bin_size_secs = int(ps_history.bin_size.total_seconds())
     start_tick = start_time.timestamp() // bin_size_secs
     end_tick = (end_time + ps_history.bin_size).timestamp() // bin_size_secs
-    num_ticks = end_tick - start_tick
+    num_ticks = end_tick - start_tick + 1
 
-    x_scale = 21 / num_ticks
+    x_scale = 21 / (num_ticks - 1)
     axis_height = 9.0
     graph_height = axis_height + 2.0
 
@@ -115,10 +115,11 @@ def render_graph(
 
     polylines: Dict[int, List[str]] = {}
 
+    # TODO: There is still an off-by-one somewhere, but now at the end of the graph.
     while current_tick >= start_tick:
         current_time, current_ps = ps_history.history[current_elem]
 
-        if current_time.timestamp() // bin_size_secs > current_tick:
+        if current_time.timestamp() // bin_size_secs > current_tick + 1:
             current_elem -= 1
 
             if current_elem < 0:
@@ -140,10 +141,10 @@ def render_graph(
         if (current_tick - origin_tick) % 25 == 0:
             tick_label = tick_format.get_label(t)
             result.append(
-                f'<circle cx="{(x - 0.5) * x_scale:.2f}" '
+                f'<circle cx="{x * x_scale:.2f}" '
                 f'cy="{axis_height + 0.4:.2f}" '
                 f'r="0.1"></circle>'
-                f'<text x="{(x - 0.5) * x_scale:.2f}" '
+                f'<text x="{x * x_scale:.2f}" '
                 f'y="{axis_height + 1.2:.2f}" '
                 f'text-anchor="middle">{tick_label}</text>'
             )
@@ -151,7 +152,7 @@ def render_graph(
         current_tick -= 1
 
     prev_points = [
-        f"{num_ticks * x_scale:.2f},{axis_height:.2f}",
+        f"{(num_ticks - 1) * x_scale:.2f},{axis_height:.2f}",
         f"0.0,{axis_height:.2f}",
     ]
 

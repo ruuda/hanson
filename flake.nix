@@ -61,7 +61,10 @@
               pkgs.overmind
               pkgs.postgresql_14
               pythonDev
+              pythonDev.pkgs.venvShellHook
             ];
+
+            venvDir = "./.venv";
 
             LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 

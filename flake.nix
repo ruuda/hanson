@@ -2,7 +2,7 @@
   description = "Hanson";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs.url = "nixpkgs/nixos-23.05";
     utils.url = "github:numtide/flake-utils";
   };
 
@@ -61,10 +61,7 @@
               pkgs.overmind
               pkgs.postgresql_14
               pythonDev
-              pythonDev.pkgs.venvShellHook
             ];
-
-            venvDir = "./.venv";
 
             LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
 

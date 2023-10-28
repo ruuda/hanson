@@ -46,8 +46,14 @@
 
       # For development, we want a Python that has all our dependent packages,
       # but not Hanson itself as a package.
-      pythonDev = python.withPackages (ps:
-        (runtimeDependencies ps) ++ (developmentDependencies ps)
+      pythonDev = python.withPackages (ps: [
+          # These two need to be in here for PyCharm to be able to find
+          # dependencies from our fake virtualenv.
+          ps.pip
+          ps.setuptools
+        ]
+        ++ (runtimeDependencies ps)
+        ++ (developmentDependencies ps)
       );
 
       hanson = python.pkgs.toPythonApplication python.pkgs.hanson;
@@ -69,6 +75,15 @@
             PGDATABASE = "hanson";
             PGUSER = "hanson_setup";
             PGPASSWORD = "hanson_setup";
+
+            # Put something in .venv that looks enough like a traditional
+            # virtualenv that it works with PyCharm autocomplete and jump to
+            # definition and such.
+            shellHook =
+              ''
+              mkdir -p .venv/bin
+              ln -sf ${pythonDev}/bin/python .venv/bin/python
+              '';
           };
         };
 
